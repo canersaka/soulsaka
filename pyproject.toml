@@ -1,0 +1,62 @@
+[project]
+name = "soulsaka"
+version = "0.1.0"
+description = "Local continual-personalization pipeline: a private clone of how you write and speak, captured, trained, served and evaluated on your own hardware."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Caner Saka" }]
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.4",
+  "httpx>=0.27",
+  "typer>=0.12",
+  "rich>=13",
+  "python-multipart>=0.0.9",
+  "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# Hub-side ML. Install on the machine that runs `soulsaka serve` (the G14).
+asr = ["faster-whisper>=1.0", "soundfile>=0.12"]
+speaker = ["speechbrain>=1.0", "torch>=2.2", "torchaudio>=2.2", "soundfile>=0.12"]
+embed = ["sentence-transformers>=3.0"]
+eval = ["scikit-learn>=1.4"]
+hub = ["soulsaka[asr,speaker,embed,eval]"]
+# Always-on microphone client. Install on whichever device wears the mic (Mac or G14).
+listener = ["sounddevice>=0.4.7", "silero-vad>=5.1", "soundfile>=0.12"]
+# Training and voice stacks are CUDA-specific and pin their own torch builds;
+# they are installed from requirements/train.txt and requirements/voice.txt instead.
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "ruff>=0.5",
+  "soundfile>=0.12",
+]
+
+[project.scripts]
+soulsaka = "soulsaka.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/soulsaka"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008", "SIM108"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]

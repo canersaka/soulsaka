@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Node / web
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Local data (never commit personal data)
+data/
+*.db
+*.db-wal
+*.db-shm
+.soulsaka/
+
+# Models and adapters
+models/
+adapters/
+*.gguf
+*.safetensors
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
