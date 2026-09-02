@@ -200,6 +200,8 @@ class TrainConfig(BaseModel):
     llama_cpp_dir: str = ""
     base_gguf: str = ""
     serve_port: int = 8080
+    # Extra llama-server / mlx_lm.server arguments, e.g. ["--chat-template-kwargs", '{"enable_thinking": false}'].
+    serve_extra_args: list[str] = Field(default_factory=list)
 
 
 class TTSConfig(BaseModel):

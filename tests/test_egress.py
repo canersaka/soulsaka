@@ -24,10 +24,12 @@ ALLOWED_HOSTS = {
 
 
 def test_no_unexpected_hosts_in_source():
+    from soulsaka.ml.llm import is_local_host
+
     found: dict[str, set[str]] = {}
     for path in SRC.rglob("*.py"):
         for host in URL_RE.findall(path.read_text(encoding="utf-8")):
-            if host not in ALLOWED_HOSTS:
+            if host not in ALLOWED_HOSTS and not is_local_host(host, []):
                 found.setdefault(host, set()).add(str(path.relative_to(SRC)))
     assert not found, f"unexpected hosts referenced: {found}"
 

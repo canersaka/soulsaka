@@ -44,7 +44,7 @@ def serve_command(
         ]
         if adapter:
             cmd += ["--adapter-path", str(adapter)]
-        return cmd
+        return cmd + list(settings.train.serve_extra_args)
     server = find_binary("llama-server", settings.train)
     if server is None:
         raise RuntimeError("llama-server not found; install llama.cpp or set train.llama_cpp_dir")
@@ -69,7 +69,7 @@ def serve_command(
     ]
     if run and run.get("gguf_path"):
         cmd += ["--lora", run["gguf_path"]]
-    return cmd
+    return cmd + list(settings.train.serve_extra_args)
 
 
 def serve(
