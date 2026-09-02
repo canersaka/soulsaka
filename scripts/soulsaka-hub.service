@@ -1,0 +1,17 @@
+# systemd unit for the hub inside WSL2 (needs systemd=true in /etc/wsl.conf).
+# sudo cp scripts/soulsaka-hub.service /etc/systemd/system/ && sudo systemctl enable --now soulsaka-hub
+[Unit]
+Description=soulsaka hub
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/soulsaka
+Environment=PATH=/home/%i/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/%i/.local/bin/uv run soulsaka serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

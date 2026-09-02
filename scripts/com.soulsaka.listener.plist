@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd agent for the always-on listener on the Mac.
+     cp scripts/com.soulsaka.listener.plist ~/Library/LaunchAgents/ ; edit the paths ;
+     launchctl load ~/Library/LaunchAgents/com.soulsaka.listener.plist -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.soulsaka.listener</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/uv</string>
+    <string>run</string>
+    <string>soulsaka</string>
+    <string>listen</string>
+    <string>--quiet</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/you/soulsaka</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/soulsaka-listener.log</string>
+  <key>StandardErrorPath</key><string>/tmp/soulsaka-listener.err</string>
+</dict>
+</plist>

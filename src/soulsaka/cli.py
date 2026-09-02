@@ -481,10 +481,15 @@ def _mount_optional() -> None:
         ("soulsaka.listener.cli", "listen_app", "listen"),
     ]
     for module, attr, name in mounts:
-        if importlib.util.find_spec(module) is None:
-            continue
-        mod = importlib.import_module(module)
-        app.add_typer(getattr(mod, attr), name=name)
+        try:
+            if importlib.util.find_spec(module) is None:
+                continue
+            mod = importlib.import_module(module)
+            app.add_typer(getattr(mod, attr), name=name)
+        except Exception as e:  # noqa: BLE001 - a broken optional module must not take the CLI down
+            import sys
+
+            print(f"soulsaka: `{name}` commands unavailable: {type(e).__name__}: {e}", file=sys.stderr)
 
 
 _mount_optional()
