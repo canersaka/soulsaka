@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 
 import numpy as np
@@ -79,8 +80,12 @@ def test_listen_devices_explains_missing_sounddevice(monkeypatch):
 
 
 def test_listen_help_lists_subcommands():
-    result = CliRunner().invoke(app, ["listen", "--help"])
+    # Rich colours and wraps help text depending on the terminal; neutralise both.
+    result = CliRunner().invoke(
+        app, ["listen", "--help"], env={"COLUMNS": "200", "NO_COLOR": "1", "TERM": "dumb"}
+    )
     assert result.exit_code == 0
+    text = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
     for word in ("--device", "--vad", "--threshold", "--no-upload", "--spool-max-mb", "--quiet"):
-        assert word in result.output
-    assert "devices" in result.output and "file" in result.output
+        assert word in text
+    assert "devices" in text and "file" in text
