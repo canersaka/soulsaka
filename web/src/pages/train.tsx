@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { api, errorMessage, isApiError } from '../api';
+import { api, isApiError } from '../api';
 import { hubOrigin } from '../auth';
 import { FidelityChart } from '../components/charts';
 import { Icon } from '../components/icon';
@@ -193,8 +193,4 @@ function RunItem({ run }: { run: TrainingRun }): JSX.Element {
       <span />
     </div>
   );
-}
-
-export function trainErrorText(e: unknown): string {
-  return errorMessage(e);
 }

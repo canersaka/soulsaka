@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, errorMessage } from '../api';
 import { Icon, type IconName } from '../components/icon';
 import { Chip, ErrorNote, Spinner, autoGrow, useDebounced, useNow } from '../components/ui';
-import { parseIso, relTime } from '../format';
+import { relTime } from '../format';
 import { memories, mergeMemories, removeMemory, upsertMemory } from '../store';
 import { S } from '../strings';
 import { MEMORY_KINDS, type MemoryKind, type MemoryOut } from '../types';
@@ -28,12 +28,19 @@ export function MemoriesPage(): JSX.Element {
   const [searchError, setSearchError] = useState<unknown>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
-  const mountedAt = useRef(Date.now());
+  const arrivals = useRef<{ loaded: boolean; seen: Map<string, number> }>({ loaded: false, seen: new Map() });
   const all = memories.value;
 
   useEffect(() => {
-    api.memories({ include_archived: true }).then(mergeMemories, setLoadError);
+    api.memories({ include_archived: true }).then(mergeMemories, setLoadError).finally(() => {
+      arrivals.current.loaded = true;
+    });
   }, []);
+  // Memories that show up after the initial load (spoken on another device) get a highlight.
+  const now = Date.now();
+  for (const m of all) {
+    if (!arrivals.current.seen.has(m.uid)) arrivals.current.seen.set(m.uid, arrivals.current.loaded ? now : 0);
+  }
 
   useEffect(() => {
     if (!dq) {
@@ -108,7 +115,7 @@ export function MemoriesPage(): JSX.Element {
                 <span class="count">{g.items.length}</span>
               </div>
               {g.items.map((m) => (
-                <MemoryItem key={m.uid} mem={m} mountedAt={mountedAt.current} />
+                <MemoryItem key={m.uid} mem={m} fresh={now - (arrivals.current.seen.get(m.uid) ?? 0) < 4000} />
               ))}
             </section>
           ))}
@@ -140,11 +147,10 @@ function AddMemory(): JSX.Element {
     }
   };
   return (
-    <form class="card stack" onSubmit={(e) => void submit(e)} style="gap:10px">
-      <div class="composer">
-        <input
-          class="input"
-          placeholder={S.memories.addPlaceholder}
+    <form class="card add-form" onSubmit={(e) => void submit(e)}>
+      <input
+        class="input"
+        placeholder={S.memories.addPlaceholder}
           value={text}
           aria-label={S.memories.add}
           onInput={(e) => setText(e.currentTarget.value)}
@@ -169,7 +175,6 @@ function AddMemory(): JSX.Element {
           <Icon name="plus" size={18} />
           <span>{S.memories.save}</span>
         </button>
-      </div>
       {error && (
         <div class="error" role="alert">
           <Icon name="alert" size={18} />
@@ -180,15 +185,13 @@ function AddMemory(): JSX.Element {
   );
 }
 
-function MemoryItem({ mem, mountedAt }: { mem: MemoryOut; mountedAt: number }): JSX.Element {
+function MemoryItem({ mem, fresh }: { mem: MemoryOut; fresh: boolean }): JSX.Element {
   const now = useNow();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(mem.text);
   const [kind, setKind] = useState(mem.kind);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const created = parseIso(mem.created_at)?.getTime() ?? 0;
-  const fresh = created > mountedAt - 10_000 && Date.now() - created < 60_000;
 
   const run = async (fn: () => Promise<void>): Promise<void> => {
     setBusy(true);

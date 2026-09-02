@@ -5,7 +5,7 @@ import { hubOrigin } from '../auth';
 import { MonthBars } from '../components/charts';
 import { Icon } from '../components/icon';
 import { Card, CopyButton, ErrorNote, Spinner, useAsync } from '../components/ui';
-import { fmtInt, relTime } from '../format';
+import { fmtCompact, fmtInt, relTime } from '../format';
 import { corpusTick } from '../store';
 import { S } from '../strings';
 import type { ImportReport, SourceOut, StatsOut } from '../types';
@@ -63,12 +63,12 @@ function StatsView({ stats }: { stats: StatsOut }): JSX.Element {
             <div class="progress-fill" style={`width:${pct * 100}%`} />
             <div class={`progress-mark ${stats.me_words >= first ? 'reached' : ''}`} style={`left:${firstPos * 100}%`}>
               <span>
-                {S.corpus.firstTrain} · {fmtInt(first)}
+                {S.corpus.firstTrain} · {fmtCompact(first)}
               </span>
             </div>
-            <div class={`progress-mark ${stats.me_words >= comfy ? 'reached' : ''}`} style="left:100%">
-              <span style="transform:translateX(-100%)">
-                {S.corpus.comfortable} · {fmtInt(comfy)}
+            <div class={`progress-mark end ${stats.me_words >= comfy ? 'reached' : ''}`} style="left:100%">
+              <span>
+                {S.corpus.comfortable} · {fmtCompact(comfy)}
               </span>
             </div>
           </div>

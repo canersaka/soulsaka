@@ -59,6 +59,6 @@ export function wavBlob(pcm: Int16Array, rate = TARGET_RATE): Blob {
   dv.setUint16(34, 16, true);
   writeStr(36, 'data');
   dv.setUint32(40, dataBytes, true);
-  const body = new Uint8Array(pcm.buffer, pcm.byteOffset, dataBytes);
+  const body = new Uint8Array(pcm.buffer as ArrayBuffer, pcm.byteOffset, dataBytes);
   return new Blob([header, body], { type: 'audio/wav' });
 }

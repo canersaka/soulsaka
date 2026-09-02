@@ -13,6 +13,7 @@ import {
   patchMemory,
   removeMemory,
   speakerTick,
+  trainingTick,
   upsertCapture,
   upsertMemory,
 } from './store';
@@ -25,7 +26,8 @@ const MAX_BACKOFF = 30_000;
 // JSON boundary: event payloads are loosely typed on purpose.
 type EventPayload = Record<string, unknown>;
 
-let started = false;
+let running = false;
+let bound = false;
 let stopped = false;
 let controller: AbortController | null = null;
 let backoff = MIN_BACKOFF;
@@ -120,6 +122,9 @@ function handleEvent(name: string, raw: string): void {
     case 'speaker_profile':
       speakerTick.value++;
       return;
+    case 'training':
+      trainingTick.value++;
+      return;
     default:
       return;
   }
@@ -153,25 +158,30 @@ async function loop(): Promise<void> {
 }
 
 export function startEvents(): void {
-  if (started) return;
-  started = true;
   stopped = false;
-  window.addEventListener('online', () => {
-    backoff = MIN_BACKOFF;
-    pokeEvents();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && connection.value !== 'live') {
+  if (!bound) {
+    bound = true;
+    window.addEventListener('online', () => {
       backoff = MIN_BACKOFF;
       pokeEvents();
-    }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && connection.value !== 'live') {
+        backoff = MIN_BACKOFF;
+        pokeEvents();
+      }
+    });
+  }
+  if (running) return;
+  running = true;
+  backoff = MIN_BACKOFF;
+  void loop().finally(() => {
+    running = false;
   });
-  void loop();
 }
 
 export function stopEvents(): void {
   stopped = true;
-  started = false;
   controller?.abort();
   pokeEvents();
 }

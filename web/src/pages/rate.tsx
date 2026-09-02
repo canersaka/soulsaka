@@ -159,7 +159,7 @@ function Quiz({ pairs, rater, onAgain }: { pairs: EvalPair[]; rater: string; onA
     <div class="stack" style="gap:16px">
       <div class="row row-between small muted">
         <span>{S.rate.progress(idx + 1, pairs.length)}</span>
-        <span>{S.rate.score(score, idx)}</span>
+        <span>{idx > 0 ? S.rate.score(score, idx) : ''}</span>
       </div>
       <div class="card stack">
         <span class="section-title">{S.rate.context}</span>

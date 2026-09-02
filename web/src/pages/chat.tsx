@@ -43,12 +43,9 @@ export function ChatPage({ chatUid }: { chatUid: string | null }): JSX.Element {
 
   return (
     <div class="page">
-      <header class="page-head row row-between">
-        <h1 class="page-title">{S.chat.title}</h1>
-        <div class="row">
-          <button class="btn btn-sm" onClick={() => setListOpen((o) => !o)} style="display:none">
-            {S.chat.chats}
-          </button>
+      <header class="page-head">
+        <div class="row row-between">
+          <h1 class="page-title">{S.chat.title}</h1>
           <button
             class="btn btn-sm"
             type="button"
@@ -126,7 +123,6 @@ export function ChatPage({ chatUid }: { chatUid: string | null }): JSX.Element {
             </p>
           )}
           <Thread
-            key={chatUid ?? 'new'}
             chatUid={chatUid}
             mode={mode}
             register={register}
@@ -215,17 +211,26 @@ function Thread({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const ownedUid = useRef<string | null>(null);
+  const threadUid = useRef<string | null>(chatUid);
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  threadUid.current = chatUid;
 
   useEffect(() => {
-    if (!chatUid || ownedUid.current === chatUid) {
+    if (ownedUid.current === chatUid) return; // the chat this thread just created
+    abortRef.current?.abort();
+    setStreaming(null);
+    setSending(false);
+    setError(null);
+    if (!chatUid) {
+      setTurns([]);
       setLoading(false);
       return;
     }
     let alive = true;
     setLoading(true);
+    setLoadError(null);
     api.chatTurns(chatUid).then(
       (t) => {
         if (!alive) return;
@@ -304,14 +309,16 @@ function Thread({
     } catch (e) {
       if (!controller.signal.aborted) setError(e);
     } finally {
-      if (acc) {
+      if (acc && threadUid.current === uid) {
         setTurns((t) => [
           ...t,
           { role: 'assistant', text: acc, profile: profile?.name ?? null, created_at: new Date().toISOString() },
         ]);
       }
-      setStreaming(null);
-      setSending(false);
+      if (threadUid.current === uid) {
+        setStreaming(null);
+        setSending(false);
+      }
       abortRef.current = null;
       onSent();
     }

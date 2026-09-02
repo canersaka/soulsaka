@@ -78,7 +78,7 @@ export const S = {
   capture: {
     title: 'Capture',
     sub: 'Notes and speech go into your corpus. Say "remember …" and it becomes a memory on every device.',
-    textPlaceholder: 'Type a note, or say it: "remember the door code is 4521"',
+    textPlaceholder: 'Type a note, or "remember …"',
     send: 'Send',
     ptt: 'Hold to talk',
     pttTap: 'Tap to stop',
@@ -229,6 +229,7 @@ export const S = {
     getCode: 'Get a pairing code',
     codeValid: 'valid for 10 minutes',
     noMonths: 'No dated messages yet.',
+    wordsPerMonth: 'words per month',
   },
   train: {
     title: 'Train',
@@ -345,6 +346,8 @@ export const S = {
     privacyEdit: 'Change these in config.toml on the hub.',
     llm: 'Model profiles',
     llmDefault: 'default',
+    llmProfile: 'profile',
+    llmModel: 'model',
     jobs: 'Background jobs',
     jobsNone: 'No jobs recorded.',
     jobsCounts: 'by status',

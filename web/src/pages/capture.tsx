@@ -10,7 +10,7 @@ import { Chip, ErrorNote, Switch, autoGrow, useNow } from '../components/ui';
 import { fmtDuration, relTime, truncate } from '../format';
 import { dropQueued, enqueueAudio, enqueueText, queued, type QueuedCapture } from '../queue';
 import { onLinkClick } from '../router';
-import { captures, memories, mergeCaptures, removeCapture, upsertCapture } from '../store';
+import { captures, memories, mergeCaptures, mergeMemories, removeCapture, upsertCapture } from '../store';
 import { S } from '../strings';
 import type { CaptureOut } from '../types';
 
@@ -68,7 +68,7 @@ export function CapturePage(): JSX.Element {
   const [loadError, setLoadError] = useState<unknown>(null);
   useEffect(() => {
     api.captures(50).then(mergeCaptures, setLoadError);
-    if (memories.value.length === 0) api.memories().then((m) => m.length && mergeMemoriesLazy(m), () => undefined);
+    if (memories.value.length === 0) api.memories().then(mergeMemories, () => undefined);
   }, []);
   return (
     <div class="page">
@@ -90,11 +90,6 @@ export function CapturePage(): JSX.Element {
       </section>
     </div>
   );
-}
-
-async function mergeMemoriesLazy(items: Awaited<ReturnType<typeof api.memories>>): Promise<void> {
-  const { mergeMemories } = await import('../store');
-  mergeMemories(items);
 }
 
 function TextComposer(): JSX.Element {
