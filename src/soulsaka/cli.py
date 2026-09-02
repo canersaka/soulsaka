@@ -251,7 +251,9 @@ def chat(
 @hub_app.command("login")
 def hub_login(
     url: str = typer.Option(..., help="Hub URL, e.g. http://192.168.1.20:8765"),
-    code: str = typer.Option(..., help="Pairing code shown by `soulsaka serve` or `soulsaka pair`."),
+    code: str = typer.Option(
+        ..., help="Pairing code shown by `soulsaka serve` or `soulsaka pair`."
+    ),
     name: str = typer.Option("", help="Name for this device."),
     kind: str = typer.Option("cli", help="browser | listener | importer | cli"),
 ):

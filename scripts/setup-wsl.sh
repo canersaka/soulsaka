@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hub setup inside WSL2 (Ubuntu) on the G14: Python env, llama.cpp with CUDA, base GGUF.
+# Hub setup inside WSL2 (Ubuntu) on the Windows machine: Python env, llama.cpp with CUDA, base GGUF.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

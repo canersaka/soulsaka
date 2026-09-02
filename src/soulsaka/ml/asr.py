@@ -54,7 +54,7 @@ class FasterWhisperASR:
         from faster_whisper import WhisperModel  # type: ignore
 
         device = detect_accelerator(cfg.device if cfg.device != "auto" else accelerator)
-        if device == "mps":  # CTranslate2 has no Metal backend; CPU int8 is fine on M1 Pro.
+        if device == "mps":  # CTranslate2 has no Metal backend; CPU int8 is fine on Apple Silicon.
             device = "cpu"
         compute = cfg.compute_type
         if compute == "auto":

@@ -2,102 +2,63 @@
 
 ## The loop
 
-```
-corpus grows daily  ──▶  soulsaka train run  ──▶  adapters/vN  ──▶  soulsaka train serve-llm
-                          (snapshot + QLoRA        │
-                           from the base model)    └──▶ soulsaka eval pairs / discriminator / voice
-                                                        └──▶ soulsaka eval report  (the curve)
-```
+The corpus grows every day. `soulsaka train run` takes a snapshot of everything so far, trains an adapter from the base model, saves it as the next version, and exports it for serving. `soulsaka train serve-llm` serves it. Then the evals run against held-out conversations and the report shows the curve over versions.
 
-Every version is a **cumulative retrain from the base model** on everything up to its
-cutoff date. Incremental fine-tunes drift and forget; cumulative retrains are
-reproducible (the snapshot's hash is recorded) and directly comparable, which is what
-makes the fidelity curve meaningful.
+Every version is a full retrain from the base model on everything up to its cutoff date, never a continuation of the previous adapter. Incremental training drifts and forgets. Full retrains are reproducible (the snapshot's hash is recorded) and comparable, which is what makes the curve mean something.
 
 ## What a training example looks like
 
-```json
-{"messages": [
-  {"role": "system", "content": "You are Caner. Write exactly as Caner would ...\nRegister: text. Text messages: short, casual ...\nLanguage: Turkish ...\nSetting: 1:1 whatsapp conversation with Ali"},
-  {"role": "user", "content": "bu akşam gelir misin"},
-  {"role": "assistant", "content": "gelirim ya, saat 8 gibi"}
- ],
- "meta": {"conversation_id": 12, "register": "text", "lang": "tr", "ts": "...", "n_context": 1, "source": "whatsapp"}}
-```
+Each example is a chat. The system prompt says who I am, what register this is (text, email, speech or prose), which language, and the setting, like "1:1 whatsapp conversation with Ali". Then come a few prior turns as context, and the last turn is my reply. Only my reply is the target.
 
-Rules (see `src/soulsaka/train/dataset.py`):
+The rules, all in `src/soulsaka/train/dataset.py`:
 
-- Only **my** messages are targets. Other people's messages appear only inside user
-  turns, as context. Group chats prefix each context line with the sender's name.
-- Consecutive messages from one side within 20 minutes are merged into one turn, so the
-  model learns my bursts ("yeah" / "probably around 8") as one reply.
-- Up to `train.context_window` prior turns, no older than three days, trimmed to fit
-  `max_seq_len`.
-- Register (`text`, `email`, `speech`, `doc`) and language are in the system prompt, so
-  the same adapter can be asked for either voice. Chat with the assistant itself is
-  excluded by default (`train.include_chat_turns`): talking to a bot is a narrow register.
-- Material without a partner (commit messages, documents, notes) gets a short
-  instruction as the user turn.
-- Media placeholders, URLs-only and one-word replies are dropped; exact duplicates are
-  dropped; each conversation contributes at most `train.max_per_conversation`.
-- 5% of **conversations** are held out (by hash, so the split is stable across
-  versions) and written to `valid.jsonl`. Evals only ever use held-out conversations.
+- Only my messages are targets. Other people's messages only appear as context. In group chats each context line is prefixed with the sender's name.
+- Messages from one side within 20 minutes are merged into one turn, so a burst like "yeah" and "probably around 8" is learned as one reply.
+- Up to 8 prior turns, none older than three days, trimmed to fit the sequence length.
+- Chat with the assistant itself is left out by default, because talking to a bot is a narrow way of writing.
+- Things without a partner, like commit messages and documents, get a short instruction as the user turn.
+- Media placeholders, link-only and one-word replies are dropped. Duplicates are dropped. Each conversation contributes at most 3000 examples.
+- 5 percent of conversations are held out, chosen by a hash so the split is the same in every version. Evals only ever use held-out conversations.
 
-`soulsaka train preview` prints the counts and a few rendered examples before you spend
-GPU time.
+`soulsaka train preview` prints the counts and a few examples before spending any GPU time.
 
 ## Backends
 
-| backend | machine | how |
-| --- | --- | --- |
-| `unsloth` | G14 (CUDA) | 4-bit QLoRA, r=16, all attention + MLP projections, loss on the reply only |
-| `peft` | any CUDA box | transformers + peft + trl, same recipe, slower |
-| `mlx` | MacBook | `python -m mlx_lm lora --mask-prompt` on the `mlx-community/*-4bit` build |
+`unsloth` is for a CUDA GPU: 4-bit base model, LoRA rank 16 on the attention and MLP layers, and the loss only on the reply. `peft` is the same recipe without Unsloth for machines that cannot install it. `mlx` is for a Mac, using mlx-lm on the 4-bit community build of the same model. `train.backend = "auto"` picks MLX on Apple Silicon, Unsloth if it is installed, otherwise PEFT.
 
-`train.backend = "auto"` picks MLX on Apple Silicon, Unsloth if installed, else PEFT.
-Defaults (`[train]` in config.toml): `Qwen/Qwen3.5-4B`, 2 epochs, lr 2e-4, batch 2 ×
-grad-accum 8, seq 2048. The 9B model fits the 5070 Ti in 4-bit if you drop the batch to 1.
+The defaults are Qwen3.5-4B, 2 epochs, learning rate 2e-4, batch 2 with gradient accumulation 8, sequence length 2048. The 9B model fits a 12 GB GPU in 4-bit if the batch size is dropped to 1.
 
 ## Commands
 
 ```bash
-soulsaka train preview                 # what the next snapshot looks like
-soulsaka train run                     # snapshot + train + export as the next vN
-soulsaka train run --dry-run           # snapshot only
-soulsaka train list                    # versions, losses, paths
-soulsaka train serve-llm --version v3  # llama-server / mlx_lm.server with the adapter
-soulsaka train export v3               # regenerate the GGUF LoRA and Ollama Modelfile
+soulsaka train preview
+soulsaka train run
+soulsaka train run --dry-run
+soulsaka train list
+soulsaka train serve-llm --version v3
+soulsaka train export v3
 ```
 
-Serving: llama.cpp applies the LoRA GGUF at load time (`--lora`), no merge needed;
-Ollama users run `ollama create soulsaka-v3 -f ~/.soulsaka/adapters/v3/Modelfile`. The
-`local` and `ollama` LLM profiles point at those servers; the web app's chat picks
-whichever is running.
+llama.cpp applies the small LoRA file on top of the base model at load time, so nothing gets merged or re-quantised. For Ollama there is a Modelfile next to each adapter.
 
 ## Evals
 
-Three signals per version, all stored in `eval_results` and shown on the Train page:
+Three numbers per version:
 
-1. **Blind pairs** (`soulsaka eval pairs --version v3 --n 30`). For held-out contexts the
-   model writes a reply; it is paired with the real one and shown shuffled at
-   `http://<hub>:8765/rate/v3` (no pairing needed, so friends on the LAN can rate; or
-   `soulsaka eval export-html`). Accuracy at 50% means indistinguishable.
-2. **Discriminator** (`soulsaka eval discriminator --version v3`). A TF-IDF + logistic
-   regression classifier trained real-vs-model with 5-fold CV. Its accuracy should fall
-   toward 50% across versions; it is the automated proxy you can run every month without
-   bothering anyone.
-3. **Voice** (`soulsaka eval voice --version v3`). Speaker-embedding cosine between
-   synthesised sentences and your enrolled voice, next to a real-clip baseline.
+Blind pairs. `soulsaka eval pairs --version v3 --n 30` takes held-out contexts, asks the model for a reply, and pairs it with my real reply in random order. Friends open `http://<hub>/rate/v3` (no pairing needed) and guess. 50 percent accuracy means they cannot tell.
 
-`soulsaka eval report --svg fidelity.svg` prints the table and draws the curve; the hub
-serves the same chart at `/api/eval/summary.svg`.
+Discriminator. `soulsaka eval discriminator --version v3` trains a classifier to tell my replies from the model's and reports cross-validated accuracy. It should fall toward 50 percent over versions. It is the automated stand-in for the blind test that can run every month without asking anyone.
 
-## Where it fails
+Voice. `soulsaka eval voice --version v3` synthesises a few of my sentences and compares the speaker embedding to my enrolled voice, next to a baseline from real clips.
 
-- **Not enough words.** Below ~30k words of you the adapter parrots. Import first.
-- **Register contamination.** If the corpus is mostly you-talking-to-the-bot, that is
-  what you get back; keep chat turns excluded and feed real conversations.
-- **Parody.** Over-trained adapters exaggerate tics. The discriminator catches it: if
-  accuracy goes *up* on a new version, lower epochs or learning rate.
-- **VRAM.** ASR, speaker model and training do not all fit in 12 GB at once; the hub
-  trains in a subprocess and you should stop `serve-llm` while a retrain runs.
+`soulsaka eval report` prints the table and `--svg` draws the chart. The Train page in the app shows the same thing.
+
+## Where it goes wrong
+
+Not enough words: under about 30k words of me the adapter just parrots. Import first.
+
+Wrong kind of words: if the corpus is mostly me talking to the bot, that is what comes back. Keep chat turns excluded and feed real conversations.
+
+Over-training: an over-trained adapter exaggerates my tics. The discriminator catches it. If its accuracy goes up on a new version, lower the epochs or the learning rate.
+
+Memory: speech recognition, the speaker model and training do not all fit in a small GPU at once. The hub trains in a separate process, and the model server should be stopped during a retrain.

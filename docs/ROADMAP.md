@@ -1,74 +1,25 @@
 # Roadmap
 
-What exists, what is next, and the stretch work that turns this from "built an AI app"
-into "did ML systems work on real silicon".
+## What works today
 
-## Done (runs today, tested without a GPU)
+The hub with the corpus, memories, retrieval and chat. The importers with auto-discovery. The web app with offline capture. The always-on listener with speaker verification on the hub. Training on CUDA or Apple Silicon with versioned adapters. The three evals and the curve. Zero-shot voice cloning. All of it tested without a GPU, so the first real-hardware run is the next step.
 
-- Hub: SQLite corpus with FTS5, hashed identities, pairing auth, durable job queue,
-  SSE fan-out, capture pipeline (speaker check → ASR → memory extraction), hybrid
-  retrieval, chat with pluggable model profiles and a cloud egress gate.
-- Importers (iMessage, WhatsApp, email, Discord, git, docs) with auto-discovery.
-- Web PWA with offline queue; always-on listener with VAD and disk spool.
-- Training: register-tagged dataset snapshots, QLoRA backends for CUDA (Unsloth/PEFT)
-  and Apple Silicon (MLX), versioned adapters, GGUF LoRA export, adapter serving.
-- Evals: blind pairs, discriminator, voice similarity, fidelity curve; `soulsaka bench`.
-- Voice: reference clip assembly and zero-shot TTS.
+## Next
 
-## Next (needs your hardware)
+1. Get the first corpus number with `soulsaka import --auto`. The target is at least 30k words.
+2. Train v1, serve it, generate blind pairs, send the rating link to a few friends. Record the first point on the curve before touching any hyperparameters.
+3. Record ten push-to-talk notes, build the voice reference, and run the voice eval.
+4. Put `scripts/retrain.sh` in cron. Every month adds a point.
+5. Once verified audio passes one hour, fine-tune the voice model on it and version it like the adapters.
 
-1. **First corpus number.** `soulsaka import auto` on the Mac; target ≥ 30k words.
-2. **v1 baseline.** `soulsaka train run` on the G14, `soulsaka train serve-llm`,
-   `soulsaka eval pairs --version v1 --n 30`, send `/rate/v1` to five friends. Record the
-   first point on the curve *before* touching hyper-parameters.
-3. **Voice enrolment.** Ten push-to-talk notes, `soulsaka voice reference`,
-   `soulsaka voice say "test"`; then `soulsaka eval voice --version v1`.
-4. **Monthly loop.** `scripts/retrain.sh` in cron. Every version adds a point.
-5. **TTS fine-tune** once verified audio passes one hour (F5-TTS fine-tuning script on
-   `captures WHERE speaker_is_me = 1`), versioned like the adapters.
+## Bigger things
 
-## Stretch: systems work
+Run speech recognition on the NPU in the Windows machine. Export Whisper to ONNX, run it through ONNX Runtime with the vendor's execution provider, add it as another ASR backend, and compare latency and power against the GPU and the CPU on the same clips using `soulsaka bench`. Write up the rough edges honestly.
 
-### AMD XDNA NPU (Ryzen AI 9 HX 370)
+Cut the voice round trip to under a second. The stages are end-of-speech detection, upload and transcription, first token from the model, and first audio from the voice model. Each has a lever: shorter silence timeout, streaming audio chunks, reusing the model's cache for the system prompt, and streaming text-to-speech. `soulsaka bench` is the yardstick.
 
-Goal: run Whisper (and later the quantised LLM) on the NPU and publish NPU vs GPU vs
-CPU latency and power for the same clips. Plan:
+Check whether one adapter for all three registers costs anything compared to one adapter per register, and split the curve by language to see how Turkish and English compare.
 
-- Export Whisper encoder/decoder to ONNX (Optimum) and run through ONNX Runtime with
-  the VitisAI execution provider from the Ryzen AI SDK (Windows). Add an `onnx`
-  backend in `ml/asr.py` behind the same `ASR` protocol; select with
-  `asr.backend = "onnx"` and `asr.device = "npu"`.
-- `soulsaka bench --wav clip.wav` already measures audio-capture-to-transcript end to end;
-  add per-stage timings (decode, encoder, decoder) to `ASRResult.segments` metadata and
-  a `--repeat` flag, then a table: CPU int8 / CUDA fp16 / NPU per clip length.
-- Power: sample `nvidia-smi --query-gpu=power.draw` and the Ryzen AI SDK's NPU
-  utilisation counters during the run; report joules per second of audio.
-- Write up the rough edges honestly (operator coverage, quantisation accuracy vs
-  faster-whisper, first-run compile time). That write-up is the interview material.
+Always-on mic on the phone. iOS will not keep a web app's mic open in the background, so this needs a native wrapper with background audio, talking to the same hub.
 
-### Latency budget: under 800 ms to first audio
-
-Voice round trip is listener → ASR → LLM → TTS → speaker. Budget and where it goes:
-
-| stage | today | target | levers |
-| --- | --- | --- | --- |
-| VAD end-of-speech | 800 ms silence | 400 ms | tune `silence_end_s`, endpoint on falling energy |
-| upload + ASR | ~300 ms (5070 Ti, turbo) | 200 ms | stream chunks over WebSocket, decode while speaking |
-| LLM first token | ~250 ms (4B Q4) | 150 ms | KV-cache reuse of the system prompt, speculative decoding with the 0.8B draft |
-| TTS first chunk | 1.5 s (F5-TTS) | 300 ms | streaming TTS (Fish Speech / F5 chunked), start on first clause |
-
-Instrument with `soulsaka bench` plus Nsight Systems on the G14 for the CUDA stages;
-keep the per-version numbers next to the fidelity curve.
-
-### Register-conditioned generation study
-
-Three registers in one adapter versus three adapters: does conditioning cost fidelity?
-The dataset builder already tags registers; train `v N-text-only` alongside `vN` and
-compare discriminator accuracy per register. Also the Turkish/English code-switching
-evaluation: split the holdout by `lang` and report the curve per language.
-
-### Phone always-on
-
-iOS will not keep a web app's microphone open in the background. The options are a
-Capacitor wrapper with background audio mode, or an Apple Watch/AirPods shortcut that
-records to the phone and syncs. Both keep the same hub API.
+Calendar as retrieval, so the assistant knows what is on Thursday without training on it.

@@ -1,4 +1,4 @@
-# Training stack for Apple Silicon (the M1 Pro MacBook as hub).
+# Training stack for Apple Silicon (a Mac as the hub).
 #   uv pip install -r requirements/train-mlx.txt
 mlx-lm>=0.24
 mlx-whisper>=0.4

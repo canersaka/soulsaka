@@ -18,7 +18,7 @@ from soulsaka.ml.llm import (
 def test_local_host_detection():
     assert is_local_host("127.0.0.1", [])
     assert is_local_host("192.168.1.20", [])
-    assert is_local_host("g14.local", [])
+    assert is_local_host("hub.local", [])
     assert is_local_host("mybox", ["mybox"])
     assert not is_local_host("api.openai.com", [])
 

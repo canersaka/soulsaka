@@ -1,4 +1,4 @@
-"""Unsloth QLoRA on CUDA (the G14 path)."""
+"""Unsloth QLoRA on CUDA (the Windows/Linux GPU path)."""
 
 from __future__ import annotations
 

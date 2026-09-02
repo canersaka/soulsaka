@@ -19,13 +19,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Hub-side ML. Install on the machine that runs `soulsaka serve` (the G14).
+# Hub-side ML. Install on the machine that runs `soulsaka serve` (the machine with the GPU).
 asr = ["faster-whisper>=1.0", "soundfile>=0.12"]
 speaker = ["speechbrain>=1.0", "torch>=2.2", "torchaudio>=2.2", "soundfile>=0.12"]
 embed = ["sentence-transformers>=3.0"]
 eval = ["scikit-learn>=1.4"]
 hub = ["soulsaka[asr,speaker,embed,eval]"]
-# Always-on microphone client. Install on whichever device wears the mic (Mac or G14).
+# Always-on microphone client. Install on whichever device wears the mic (Mac or Windows).
 listener = ["sounddevice>=0.4.7", "silero-vad>=5.1", "soundfile>=0.12"]
 # Training and voice stacks are CUDA-specific and pin their own torch builds;
 # they are installed from requirements/train.txt and requirements/voice.txt instead.

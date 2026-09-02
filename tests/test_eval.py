@@ -24,7 +24,9 @@ def test_pairs_rating_and_summary(client, state):
     uids = generate_pairs(state, "v1", n=6, profile="py", seed=1)
     assert len(uids) == 6
     shown = client.get(
-        "/api/eval/pairs", params={"version": "v1", "rater": "ali"}, headers={"X-Soulsaka-Client": ""}
+        "/api/eval/pairs",
+        params={"version": "v1", "rater": "ali"},
+        headers={"X-Soulsaka-Client": ""},
     ).json()
     assert len(shown) == 6 and {"uid", "context", "first", "second"} <= set(shown[0])
     for p in shown:

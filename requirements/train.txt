@@ -1,8 +1,8 @@
-# Training stack for the CUDA hub (the G14, inside WSL2 or native Windows).
+# Training stack for a CUDA hub (Windows inside WSL2, or Linux).
 # Install into the same environment as soulsaka:
 #   uv pip install -r requirements/train.txt
 # Torch must match your CUDA; see https://pytorch.org/get-started/locally/ if the
-# default wheel does not pick up the GPU (the RTX 5070 Ti needs CUDA 12.8+ builds).
+# default wheel does not pick up the GPU (recent GPUs need recent CUDA builds).
 unsloth
 unsloth_zoo
 trl>=0.19

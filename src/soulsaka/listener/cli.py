@@ -241,7 +241,9 @@ def _run(source: Any, opts: RunOptions) -> int:
 
     listener = Listener(source, vad, segmenter, spool, uploader)
     stop = threading.Event()
-    worker = threading.Thread(target=listener.run, args=(stop,), name="soulsaka-capture", daemon=True)
+    worker = threading.Thread(
+        target=listener.run, args=(stop,), name="soulsaka-capture", daemon=True
+    )
     log.info(
         "listener starting: source=%s vad=%s threshold=%.2f spool=%s cap=%dMB upload=%s",
         source.name,

@@ -26,7 +26,9 @@ def test_pairing_flow(client, state):
     token = r.json()["token"]
     # code is single use
     assert client.post("/api/pair", json={"code": code, "name": "again"}).status_code == 400
-    me = client.get("/api/me", headers={"Authorization": f"Bearer {token}", "X-Soulsaka-Client": ""})
+    me = client.get(
+        "/api/me", headers={"Authorization": f"Bearer {token}", "X-Soulsaka-Client": ""}
+    )
     assert me.status_code == 200 and me.json()["name"] == "phone"
     devs = client.get("/api/devices").json()
     assert any(d["name"] == "phone" for d in devs)

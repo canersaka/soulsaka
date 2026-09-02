@@ -459,95 +459,6 @@ nvtx = [
 ]
 
 [[package]]
-name = "soulsaka"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-multipart" },
-    { name = "rich" },
-    { name = "typer" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-asr = [
-    { name = "faster-whisper" },
-    { name = "soundfile" },
-]
-embed = [
-    { name = "sentence-transformers" },
-]
-eval = [
-    { name = "scikit-learn" },
-]
-hub = [
-    { name = "faster-whisper" },
-    { name = "scikit-learn" },
-    { name = "sentence-transformers" },
-    { name = "soundfile" },
-    { name = "speechbrain" },
-    { name = "torch" },
-    { name = "torchaudio" },
-]
-listener = [
-    { name = "silero-vad" },
-    { name = "sounddevice" },
-    { name = "soundfile" },
-]
-speaker = [
-    { name = "soundfile" },
-    { name = "speechbrain" },
-    { name = "torch" },
-    { name = "torchaudio" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "soundfile" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "soulsaka", extras = ["asr", "speaker", "embed", "eval"], marker = "extra == 'hub'" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "faster-whisper", marker = "extra == 'asr'", specifier = ">=1.0" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pydantic-settings", specifier = ">=2.4" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "rich", specifier = ">=13" },
-    { name = "scikit-learn", marker = "extra == 'eval'", specifier = ">=1.4" },
-    { name = "sentence-transformers", marker = "extra == 'embed'", specifier = ">=3.0" },
-    { name = "silero-vad", marker = "extra == 'listener'", specifier = ">=5.1" },
-    { name = "sounddevice", marker = "extra == 'listener'", specifier = ">=0.4.7" },
-    { name = "soundfile", marker = "extra == 'asr'", specifier = ">=0.12" },
-    { name = "soundfile", marker = "extra == 'listener'", specifier = ">=0.12" },
-    { name = "soundfile", marker = "extra == 'speaker'", specifier = ">=0.12" },
-    { name = "speechbrain", marker = "extra == 'speaker'", specifier = ">=1.0" },
-    { name = "torch", marker = "extra == 'speaker'", specifier = ">=2.2" },
-    { name = "torchaudio", marker = "extra == 'speaker'", specifier = ">=2.2" },
-    { name = "typer", specifier = ">=0.12" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-]
-provides-extras = ["asr", "speaker", "embed", "eval", "hub", "listener"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "ruff", specifier = ">=0.5" },
-    { name = "soundfile", specifier = ">=0.12" },
-]
-
-[[package]]
 name = "fastapi"
 version = "0.141.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2079,6 +1990,95 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/32/d3/e31f526482782764aa4f70e20fd4545cf2e4a81a60b6fb0f089f6d107991/silero_vad-6.2.1.tar.gz", hash = "sha256:b23062b0e39fad17b1266fc23c1e7b4290219dbe82ce08510889e32f681f4b3b", size = 28913811, upload-time = "2026-02-24T08:41:59.329Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/2b/48566f29a8b53d856ceb1994f209122749b3fda0a733a07e82047257de7a/silero_vad-6.2.1-py3-none-any.whl", hash = "sha256:09de93c4d874bb19c53e62a47dd38be5f163cedad2b5599583231f2a84ef79cb", size = 9146242, upload-time = "2026-02-24T08:41:56.955Z" },
+]
+
+[[package]]
+name = "soulsaka"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-multipart" },
+    { name = "rich" },
+    { name = "typer" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+asr = [
+    { name = "faster-whisper" },
+    { name = "soundfile" },
+]
+embed = [
+    { name = "sentence-transformers" },
+]
+eval = [
+    { name = "scikit-learn" },
+]
+hub = [
+    { name = "faster-whisper" },
+    { name = "scikit-learn" },
+    { name = "sentence-transformers" },
+    { name = "soundfile" },
+    { name = "speechbrain" },
+    { name = "torch" },
+    { name = "torchaudio" },
+]
+listener = [
+    { name = "silero-vad" },
+    { name = "sounddevice" },
+    { name = "soundfile" },
+]
+speaker = [
+    { name = "soundfile" },
+    { name = "speechbrain" },
+    { name = "torch" },
+    { name = "torchaudio" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "soundfile" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "faster-whisper", marker = "extra == 'asr'", specifier = ">=1.0" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "rich", specifier = ">=13" },
+    { name = "scikit-learn", marker = "extra == 'eval'", specifier = ">=1.4" },
+    { name = "sentence-transformers", marker = "extra == 'embed'", specifier = ">=3.0" },
+    { name = "silero-vad", marker = "extra == 'listener'", specifier = ">=5.1" },
+    { name = "soulsaka", extras = ["asr", "speaker", "embed", "eval"], marker = "extra == 'hub'" },
+    { name = "sounddevice", marker = "extra == 'listener'", specifier = ">=0.4.7" },
+    { name = "soundfile", marker = "extra == 'asr'", specifier = ">=0.12" },
+    { name = "soundfile", marker = "extra == 'listener'", specifier = ">=0.12" },
+    { name = "soundfile", marker = "extra == 'speaker'", specifier = ">=0.12" },
+    { name = "speechbrain", marker = "extra == 'speaker'", specifier = ">=1.0" },
+    { name = "torch", marker = "extra == 'speaker'", specifier = ">=2.2" },
+    { name = "torchaudio", marker = "extra == 'speaker'", specifier = ">=2.2" },
+    { name = "typer", specifier = ">=0.12" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+]
+provides-extras = ["asr", "speaker", "embed", "eval", "hub", "listener"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "ruff", specifier = ">=0.5" },
+    { name = "soundfile", specifier = ">=0.12" },
 ]
 
 [[package]]
