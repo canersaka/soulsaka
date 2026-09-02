@@ -176,3 +176,22 @@ class HubClient:
         return MemoryOut(
             **self._check(self._c.post("/api/memories", json={"text": text, "kind": kind}))
         )
+
+    def capture(self, uid: str) -> CaptureOut:
+        return CaptureOut(**self._check(self._c.get(f"/api/captures/{uid}")))
+
+    def chat_stream(self, text: str, *, profile: str | None = None, mode: str = "assistant"):
+        """Yield reply chunks from the hub's streaming chat endpoint."""
+        body = {"text": text, "profile": profile, "mode": mode, "stream": True}
+        with self._c.stream("POST", "/api/chat", json=body) as r:
+            if r.status_code >= 400:
+                r.read()
+                raise HubError(f"chat: {r.status_code} {r.text[:200]}")
+            event = None
+            for line in r.iter_lines():
+                if line.startswith("event:"):
+                    event = line[6:].strip()
+                elif line.startswith("data:") and event == "token":
+                    yield json.loads(line[5:].strip())["t"]
+                elif line.startswith("data:") and event == "error":
+                    raise HubError(json.loads(line[5:].strip()).get("error", "chat failed"))
