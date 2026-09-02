@@ -466,6 +466,54 @@ def self_model_cmd(
         state.close()
 
 
+@app.command("bench")
+def bench_cmd(
+    hub: str | None = typer.Option(
+        None, help="Hub URL (default: the paired hub, or http://127.0.0.1:8765)."
+    ),
+    n: int = typer.Option(5, help="Samples per measurement."),
+    wav: Path | None = typer.Option(None, help="A short WAV of your voice for the audio path."),
+    profile: list[str] = typer.Option([], help="LLM profile(s) to time; repeatable."),
+    no_chat: bool = typer.Option(False, help="Skip the chat measurements."),
+):
+    """Measure capture-to-memory and chat latency against a running hub."""
+    from soulsaka import bench
+    from soulsaka.client import ClientConfig, HubClient
+
+    cfg = ClientConfig.load()
+    if hub:
+        client = HubClient(
+            hub, cfg.token if cfg and cfg.hub_url.rstrip("/") == hub.rstrip("/") else None
+        )
+    elif cfg and cfg.token:
+        client = HubClient.from_config()
+    else:
+        client = HubClient("http://127.0.0.1:8765")
+    report = bench.run(client, n=n, wav=wav, chat_profiles=profile or None, chat=not no_chat)
+    path = report.save()
+    t = Table(title=f"latency against {client.base_url}")
+    for col in ("measurement", "n", "p50", "p90", "min", "max"):
+        t.add_column(col, justify="right" if col != "measurement" else "left")
+    for name, row in report.summary().items():
+        unit = "" if name.endswith("_per_s") else "s"
+        t.add_row(
+            name,
+            str(row["n"]),
+            f"{row['p50_s']}{unit}",
+            f"{row['p90_s']}{unit}",
+            f"{row['min_s']}{unit}",
+            f"{row['max_s']}{unit}",
+        )
+    console.print(t)
+    failed = [s for s in report.samples if not s.ok]
+    if failed:
+        rprint(
+            f"[yellow]{len(failed)} measurements failed[/]: "
+            + "; ".join(str(s.detail) for s in failed[:3])
+        )
+    rprint(f"wrote {path}")
+
+
 # -- optional sub-commands provided by other modules ------------------------------------
 
 
@@ -489,7 +537,9 @@ def _mount_optional() -> None:
         except Exception as e:  # noqa: BLE001 - a broken optional module must not take the CLI down
             import sys
 
-            print(f"soulsaka: `{name}` commands unavailable: {type(e).__name__}: {e}", file=sys.stderr)
+            print(
+                f"soulsaka: `{name}` commands unavailable: {type(e).__name__}: {e}", file=sys.stderr
+            )
 
 
 _mount_optional()

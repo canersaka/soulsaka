@@ -57,12 +57,23 @@ class HubError(Exception):
 
 
 class HubClient:
-    def __init__(self, hub_url: str, token: str | None = None, timeout: float = 120.0):
+    def __init__(
+        self,
+        hub_url: str,
+        token: str | None = None,
+        timeout: float = 120.0,
+        *,
+        client: httpx.Client | None = None,
+    ):
         headers = dict(CLIENT_HEADERS)
         if token:
             headers["Authorization"] = f"Bearer {token}"
         self.base_url = hub_url.rstrip("/")
-        self._c = httpx.Client(base_url=self.base_url, headers=headers, timeout=timeout)
+        if client is not None:  # tests: any httpx.Client, e.g. Starlette's TestClient
+            client.headers.update(headers)
+            self._c = client
+        else:
+            self._c = httpx.Client(base_url=self.base_url, headers=headers, timeout=timeout)
 
     @classmethod
     def from_config(cls) -> HubClient:
