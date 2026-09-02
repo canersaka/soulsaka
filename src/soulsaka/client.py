@@ -53,7 +53,11 @@ class ClientConfig:
 
 
 class HubError(Exception):
-    pass
+    """The hub answered with an error (status set) or could not be parsed (status None)."""
+
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 class HubClient:
@@ -94,7 +98,10 @@ class HubClient:
                 detail = r.json().get("detail")
             except Exception:  # noqa: BLE001
                 detail = r.text[:200]
-            raise HubError(f"{r.request.method} {r.request.url.path}: {r.status_code} {detail}")
+            raise HubError(
+                f"{r.request.method} {r.request.url.path}: {r.status_code} {detail}",
+                status=r.status_code,
+            )
         return r.json() if r.content else None
 
     # -- endpoints ---------------------------------------------------------------------
@@ -186,7 +193,7 @@ class HubClient:
         with self._c.stream("POST", "/api/chat", json=body) as r:
             if r.status_code >= 400:
                 r.read()
-                raise HubError(f"chat: {r.status_code} {r.text[:200]}")
+                raise HubError(f"chat: {r.status_code} {r.text[:200]}", status=r.status_code)
             event = None
             for line in r.iter_lines():
                 if line.startswith("event:"):
