@@ -28,6 +28,7 @@ capture (text|audio) ─▶ jobs.process_capture
     ─▶ jobs.embed_message / embed_memory           ─▶ embeddings
 
 importer ─▶ /api/messages/batch ─▶ messages (is_me from source, others hashed)
+web drop ─▶ /api/import/upload  ─▶ file kept by content hash ─▶ same importers ─▶ messages
 
 chat ─▶ retrieval (FTS5 + cosine, RRF) ─▶ prompt (self-model, memories, exemplars,
         register hint) ─▶ LLM profile (local adapter | cloud) ─▶ stream
@@ -68,6 +69,22 @@ asked for either voice; chat prompts carry a register hint.
 Studio, vLLM, OpenAI), the Anthropic Messages API, or a local CLI. `ml/asr.py` wraps
 faster-whisper (CUDA/CPU) and mlx-whisper (Apple Silicon). `ml/speaker.py` wraps
 SpeechBrain ECAPA-TDNN. Every backend has a fake so the test suite runs without a GPU.
+
+## Listener
+
+`soulsaka listen` opens the microphone at 16 kHz, runs silero VAD (or an energy fallback)
+per 32 ms frame, and cuts segments with 250 ms pre-roll, 800 ms end-of-speech silence
+and a 30 s cap. Segments are written atomically to `spool/` with a JSON sidecar and an
+uploader thread posts them oldest-first with exponential backoff, deleting on any 2xx.
+Hub rejections that will never succeed (400/404/413/415/422) are quarantined under
+`spool/failed/`. The hub, not the listener, decides whether the voice is yours.
+
+## Measuring
+
+`soulsaka bench` times the two paths a person feels: text/audio capture until the memory
+or transcript exists on the hub, and chat time-to-first-token and throughput per LLM
+profile, writing JSON under `evals/`. `soulsaka eval report` and `/api/eval/summary` give
+the fidelity curve per adapter version.
 
 ## Multi-device "remember this"
 
