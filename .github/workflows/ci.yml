@@ -17,22 +17,27 @@ jobs:
         run: uv sync --group dev
       - name: Lint
         run: uv run ruff check src tests
+      - name: Format
+        run: uv run ruff format --check src tests
       - name: Test
         run: uv run pytest
 
   web:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('web/package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Detect web app
+        id: web
+        run: echo "present=$([ -f web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
+        if: steps.web.outputs.present == 'true'
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - name: Install
+        if: steps.web.outputs.present == 'true'
         run: npm ci
         working-directory: web
       - name: Typecheck and build
+        if: steps.web.outputs.present == 'true'
         run: npm run build
         working-directory: web
