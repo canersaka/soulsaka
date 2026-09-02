@@ -21,6 +21,7 @@ from soulsaka.hub.routes import (
     chat,
     corpus,
     eval,
+    imports,
     memories,
     sync,
     system,
@@ -91,7 +92,19 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for r in (system, corpus, captures, memories, sync, chat, admin, training, eval, voice):
+    for r in (
+        system,
+        corpus,
+        captures,
+        memories,
+        sync,
+        chat,
+        admin,
+        training,
+        eval,
+        voice,
+        imports,
+    ):
         app.include_router(r.router, prefix="/api")
 
     @app.exception_handler(404)
