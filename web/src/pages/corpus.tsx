@@ -10,7 +10,8 @@ import { corpusTick } from '../store';
 import { S } from '../strings';
 import type { ImportReport, SourceOut, StatsOut } from '../types';
 
-const UPLOAD_KINDS = ['auto', 'whatsapp_export', 'discord', 'mbox'] as const;
+const DEFAULT_UPLOAD_KINDS = ['whatsapp_export', 'discord', 'mbox', 'imessage', 'whatsapp'];
+const UPLOAD_ACCEPT = '.txt,.zip,.mbox,.db,.sqlite,.emlx,text/plain,application/zip';
 
 export function CorpusPage(): JSX.Element {
   const tick = corpusTick.value;
@@ -218,6 +219,8 @@ function UploadZone({ onDone }: { onDone: () => void }): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const known = useAsync(api.importKinds, []);
+  const kinds = ['auto', ...(known.data && known.data.length > 0 ? known.data : DEFAULT_UPLOAD_KINDS)];
   const handle = async (file: File | undefined): Promise<void> => {
     if (!file || busy) return;
     setBusy(true);
@@ -250,14 +253,14 @@ function UploadZone({ onDone }: { onDone: () => void }): JSX.Element {
         <Icon name="upload" size={28} />
         <div class="row" style="justify-content:center">
           <select class="select" style="width:auto" value={kind} aria-label={S.corpus.uploadKind} onChange={(e) => setKind(e.currentTarget.value)}>
-            {UPLOAD_KINDS.map((k) => (
+            {kinds.map((k) => (
               <option key={k} value={k}>
                 {S.corpus.uploadKinds[k] ?? k}
               </option>
             ))}
           </select>
           <label class="btn btn-primary">
-            <input type="file" hidden accept=".txt,.zip,.mbox,text/plain,application/zip" disabled={busy} onChange={(e) => { void handle(e.currentTarget.files?.[0]); e.currentTarget.value = ''; }} />
+            <input type="file" hidden accept={UPLOAD_ACCEPT} disabled={busy} onChange={(e) => { void handle(e.currentTarget.files?.[0]); e.currentTarget.value = ''; }} />
             {busy ? <Spinner /> : <Icon name="upload" size={16} />}
             {busy ? S.corpus.uploading : S.corpus.uploadPick}
           </label>

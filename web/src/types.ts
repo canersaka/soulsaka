@@ -241,3 +241,21 @@ export interface EvalPair {
   first: string;
   second: string;
 }
+
+export interface VoiceReference {
+  reference_clip: string | null;
+  reference_text: string | null;
+  candidates: number;
+}
+
+export interface VoiceReferenceBuild extends VoiceReference {
+  seconds: number;
+  clips: string[];
+}
+
+export interface RaterScore {
+  rater: string;
+  n: number;
+  correct: number;
+  accuracy: number | null;
+}

@@ -1,11 +1,11 @@
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
-import { api } from '../api';
+import { useEffect, useState } from 'preact/hooks';
+import { api, isApiError } from '../api';
 import { clearCredentials, getDeviceUid, getHubUrl, getToken, hubOrigin, setHubUrl } from '../auth';
 import { Icon } from '../components/icon';
 import { Card, Chip, CopyButton, ErrorNote, Field, Segmented, Spinner, useAsync, useNow } from '../components/ui';
 import { fmtDateTime, fmtInt, relTime, truncate } from '../format';
-import { deviceTick, speakerTick } from '../store';
+import { deviceTick, speakerTick, voiceTick } from '../store';
 import { S } from '../strings';
 import { applyTheme, theme, type Theme } from '../theme';
 
@@ -19,6 +19,7 @@ export function SettingsPage(): JSX.Element {
       <PairCard />
       <DevicesCard />
       <SpeakerCard />
+      <VoiceCard />
       <ConfigCards />
       <JobsCard />
       <AppearanceCard />
@@ -215,6 +216,126 @@ function SpeakerCard(): JSX.Element {
         </div>
       )}
       {error ? <ErrorNote error={error} /> : null}
+    </Card>
+  );
+}
+
+function useObjectUrl(): [string | null, (blob: Blob | null) => void] {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+  return [url, (blob) => setUrl(blob ? URL.createObjectURL(blob) : null)];
+}
+
+function VoiceCard(): JSX.Element {
+  const ref = useAsync(api.voiceReference, [voiceTick.value]);
+  const [building, setBuilding] = useState(false);
+  const [built, setBuilt] = useState<number | null>(null);
+  const [buildError, setBuildError] = useState<unknown>(null);
+  const [text, setText] = useState('');
+  const [speaking, setSpeaking] = useState(false);
+  const [speakError, setSpeakError] = useState<unknown>(null);
+  const [audioUrl, setAudio] = useState<Blob | null>(null);
+  const [objectUrl, setObjectUrl] = useObjectUrl();
+  useEffect(() => setObjectUrl(audioUrl), [audioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const build = async (): Promise<void> => {
+    setBuilding(true);
+    setBuildError(null);
+    setBuilt(null);
+    try {
+      const out = await api.buildVoiceReference();
+      setBuilt(out.seconds);
+      ref.reload();
+    } catch (e) {
+      setBuildError(e);
+    } finally {
+      setBuilding(false);
+    }
+  };
+  const play = async (): Promise<void> => {
+    setSpeakError(null);
+    try {
+      setAudio(await api.voiceReferenceAudio());
+    } catch (e) {
+      setSpeakError(e);
+    }
+  };
+  const speak = async (): Promise<void> => {
+    const t = text.trim();
+    if (!t || speaking) return;
+    setSpeaking(true);
+    setSpeakError(null);
+    try {
+      setAudio(await api.speak(t));
+    } catch (e) {
+      setSpeakError(e);
+    } finally {
+      setSpeaking(false);
+    }
+  };
+  const r = ref.data;
+  const unavailable = isApiError(ref.error, 404);
+  return (
+    <Card title={S.settings.voice} lead={S.settings.voiceLead}>
+      {unavailable && <p class="muted small">{S.errors.notImplemented}</p>}
+      {ref.error && !unavailable ? <ErrorNote error={ref.error} onRetry={ref.reload} /> : null}
+      {r && (
+        <div class="stack">
+          <dl class="kv">
+            <dt>{S.settings.voiceReference}</dt>
+            <dd>{r.reference_clip ? S.settings.voiceReady : S.settings.voiceNone}</dd>
+            <dt>{S.settings.voiceCandidates}</dt>
+            <dd>{fmtInt(r.candidates)}</dd>
+            {r.reference_text && (
+              <>
+                <dt>{S.settings.voiceText}</dt>
+                <dd class="small dim">{truncate(r.reference_text, 160)}</dd>
+              </>
+            )}
+          </dl>
+          <div class="row">
+            <button class="btn btn-sm" disabled={building} onClick={() => void build()}>
+              {building ? <Spinner /> : <Icon name="mic" size={15} />}
+              {S.settings.voiceBuild}
+            </button>
+            {r.reference_clip && (
+              <button class="btn btn-sm" onClick={() => void play()}>
+                <Icon name="radio" size={15} />
+                {S.settings.voicePlay}
+              </button>
+            )}
+            {built !== null && <span class="small" style="color:var(--ok)">{S.settings.voiceBuilt(built)}</span>}
+          </div>
+          {buildError ? <ErrorNote error={buildError} /> : null}
+          <form
+            class="composer"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void speak();
+            }}
+          >
+            <input
+              class="input"
+              value={text}
+              placeholder={S.settings.voiceSayPlaceholder}
+              aria-label={S.settings.voiceSpeak}
+              onInput={(e) => setText(e.currentTarget.value)}
+            />
+            <button class="btn btn-primary" type="submit" disabled={speaking || !text.trim()}>
+              {speaking ? <Spinner /> : <Icon name="radio" size={18} />}
+              <span>{S.settings.voiceSpeak}</span>
+            </button>
+          </form>
+          {speakError ? (
+            isApiError(speakError, 503) ? (
+              <div class="note">{S.settings.voiceUnavailable}</div>
+            ) : (
+              <ErrorNote error={speakError} />
+            )
+          ) : null}
+          {objectUrl && <audio controls autoplay src={objectUrl} style="width:100%" />}
+        </div>
+      )}
     </Card>
   );
 }

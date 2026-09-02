@@ -14,6 +14,7 @@ export const corpusTick = signal(0);
 export const deviceTick = signal(0);
 export const speakerTick = signal(0);
 export const trainingTick = signal(0);
+export const voiceTick = signal(0);
 
 const byTimeDesc = (a: { client_ts: string }, b: { client_ts: string }): number =>
   a.client_ts < b.client_ts ? 1 : a.client_ts > b.client_ts ? -1 : 0;

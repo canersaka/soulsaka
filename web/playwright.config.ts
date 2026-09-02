@@ -13,8 +13,12 @@ const LLM_PORT = PORT + 3;
 
 const webDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(webDir, '..');
+// Playwright evaluates this file in the runner and again in each worker; the temp dirs are
+// created once and handed down through the environment so every process sees the same hubs.
 const dataDir = process.env.SOULSAKA_E2E_DATA_DIR ?? mkdtempSync(path.join(tmpdir(), 'soulsaka-e2e-'));
-const pairDataDir = mkdtempSync(path.join(tmpdir(), 'soulsaka-e2e-pair-'));
+const pairDataDir =
+  process.env.SOULSAKA_E2E_PAIR_DATA_DIR ?? mkdtempSync(path.join(tmpdir(), 'soulsaka-e2e-pair-'));
+process.env.SOULSAKA_E2E_DATA_DIR = dataDir;
 process.env.SOULSAKA_E2E_PAIR_DATA_DIR = pairDataDir;
 process.env.SOULSAKA_E2E_PAIR_URL = `http://${HOST}:${PAIR_PORT}`;
 process.env.SOULSAKA_E2E_LLM_PORT = String(LLM_PORT);

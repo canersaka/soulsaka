@@ -7,7 +7,7 @@ import { readLocal, writeLocal } from '../auth';
 import { Icon } from '../components/icon';
 import { ErrorNote, Field, Spinner, useAsync } from '../components/ui';
 import { S } from '../strings';
-import type { EvalPair, HealthOut } from '../types';
+import type { EvalPair, HealthOut, RaterScore } from '../types';
 
 const KEY_RATER = 'soulsaka.rater';
 
@@ -99,13 +99,35 @@ export function RatePage({ version }: { version: string }): JSX.Element {
       ) : !pairs.data || pairs.data.length === 0 ? (
         <div class="empty">{S.rate.noPairs}</div>
       ) : (
-        <Quiz key={round} pairs={pairs.data} rater={rater.trim()} onAgain={() => setRound((r) => r + 1)} />
+        <Quiz key={round} pairs={pairs.data} rater={rater.trim()} version={version} onAgain={() => setRound((r) => r + 1)} />
       )}
     </div>
   );
 }
 
-function Quiz({ pairs, rater, onAgain }: { pairs: EvalPair[]; rater: string; onAgain: () => void }): JSX.Element {
+function OverallScore({ version, rater }: { version: string; rater: string }): JSX.Element | null {
+  const score = useAsync(
+    () =>
+      publicGet<RaterScore>(
+        `/api/eval/pairs/${encodeURIComponent(version)}/score?rater=${encodeURIComponent(rater)}`,
+      ),
+    [version, rater],
+  );
+  if (!score.data || score.data.n === 0) return null;
+  return <p class="small muted">{S.rate.overall(score.data.correct, score.data.n)}</p>;
+}
+
+function Quiz({
+  pairs,
+  rater,
+  version,
+  onAgain,
+}: {
+  pairs: EvalPair[];
+  rater: string;
+  version: string;
+  onAgain: () => void;
+}): JSX.Element {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<'first' | 'second' | null>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
@@ -121,6 +143,7 @@ function Quiz({ pairs, rater, onAgain }: { pairs: EvalPair[]; rater: string; onA
         <h2 class="card-title">{S.rate.done}</h2>
         <div class="score-big">{S.rate.score(score, pairs.length)}</div>
         <p class="dim">{S.rate.interpret(pct)}</p>
+        <OverallScore version={version} rater={rater} />
         <button class="btn btn-primary" onClick={onAgain}>
           {S.rate.again}
         </button>

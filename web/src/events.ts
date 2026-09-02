@@ -15,6 +15,7 @@ import {
   speakerTick,
   trainingTick,
   upsertCapture,
+  voiceTick,
   upsertMemory,
 } from './store';
 import type { CaptureOut, MemoryOut } from './types';
@@ -124,6 +125,9 @@ function handleEvent(name: string, raw: string): void {
       return;
     case 'training':
       trainingTick.value++;
+      return;
+    case 'voice':
+      voiceTick.value++;
       return;
     default:
       return;

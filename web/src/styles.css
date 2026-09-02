@@ -271,6 +271,7 @@ kbd,
   height: 52px;
   padding: 0 8px 0 16px;
   padding-top: env(safe-area-inset-top);
+  background: var(--bg);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: saturate(160%) blur(12px);
   -webkit-backdrop-filter: saturate(160%) blur(12px);
@@ -297,6 +298,7 @@ kbd,
   z-index: 30;
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-elev);
   background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
@@ -447,6 +449,14 @@ kbd,
 .card-title {
   font-size: 16px;
   font-weight: 600;
+}
+@media (max-width: 599px) {
+  .card-head {
+    flex-wrap: wrap;
+  }
+  .card-head .row {
+    width: 100%;
+  }
 }
 .card-lead {
   color: var(--ink-2);

@@ -23,6 +23,8 @@ import type {
   StatsOut,
   SyncOut,
   TrainingRun,
+  VoiceReference,
+  VoiceReferenceBuild,
 } from './types';
 
 export const CLIENT_HEADER = 'X-Soulsaka-Client';
@@ -119,6 +121,13 @@ export async function requestRaw(path: string, opts: RequestOptions = {}): Promi
   return res;
 }
 
+/** Like request(), but hands back the body as a Blob (audio, files). */
+export async function requestBlob(path: string, opts: RequestOptions = {}): Promise<Blob> {
+  const res = await requestRaw(path, opts);
+  if (!res.ok) throw new ApiError(res.status, await errorDetail(res));
+  return res.blob();
+}
+
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const res = await requestRaw(path, opts);
   if (!res.ok) throw new ApiError(res.status, await errorDetail(res));
@@ -184,6 +193,7 @@ export const api = {
   sources: () => request<SourceOut[]>('/api/sources'),
   deleteSource: (id: number) =>
     request<{ ok: boolean }>(`/api/sources/${id}`, { method: 'DELETE' }),
+  importKinds: () => request<string[]>('/api/import/kinds'),
   importUpload: (file: File, kind: string) => {
     const form = new FormData();
     form.append('file', file, file.name);
@@ -196,6 +206,11 @@ export const api = {
   profiles: () => request<LLMProfile[]>('/api/llm/profiles'),
 
   speaker: () => request<SpeakerStatus>('/api/speaker'),
+  voiceReference: () => request<VoiceReference>('/api/voice/reference'),
+  buildVoiceReference: () =>
+    request<VoiceReferenceBuild>('/api/voice/reference', { method: 'POST', json: {} }),
+  voiceReferenceAudio: () => requestBlob('/api/voice/reference/audio'),
+  speak: (text: string) => requestBlob('/api/voice/speak', { method: 'POST', json: { text } }),
   resetSpeaker: () => request<{ ok: boolean }>('/api/speaker', { method: 'DELETE' }),
   jobs: () => request<JobsOut>('/api/jobs'),
 

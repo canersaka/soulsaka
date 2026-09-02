@@ -118,6 +118,7 @@ uv sync --group dev
 uv run ruff check src tests
 uv run pytest
 cd web && npm ci && npm run dev    # UI against a hub on :8765
+cd web && npm run test:e2e         # Playwright: boots fake-backend hubs, 9 browser scenarios
 ```
 
 MIT licensed.
