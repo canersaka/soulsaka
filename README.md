@@ -51,7 +51,7 @@ versions is the deliverable, not a chatbot.
 ## Quick start
 
 ```bash
-# on the hub machine
+# on the hub machine (the G14 in WSL2, or the MacBook)
 uv sync --extra hub            # or: pip install -e ".[hub]"
 soulsaka init --name "Your Name" --email you@example.com --phone "+1 617 555 0199"
 soulsaka serve                   # prints the URLs to open and a pairing code
@@ -59,7 +59,7 @@ soulsaka serve                   # prints the URLs to open and a pairing code
 # on the Mac with your messages
 uv sync
 soulsaka hub login --url http://<hub-ip>:8765 --code XXXXXXXX
-soulsaka import --auto           # finds iMessage / WhatsApp / Mail, asks only when it must
+soulsaka import --auto           # finds iMessage / WhatsApp / Mail / git, asks only when it must
 soulsaka stats                   # "the number": words of you in the corpus
 
 # always-on microphone on whichever machine wears it
@@ -69,9 +69,27 @@ soulsaka listen
 
 Open the hub URL on your phone, enter the pairing code once, and add it to the home
 screen. See [docs/SETUP.md](docs/SETUP.md) for the per-machine setup (Windows + WSL2 on
-the G14, the Mac, the iPhone) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how
-the pieces fit. [PRIVACY.md](PRIVACY.md) explains exactly what is stored and what can
-leave the machine.
+the G14, the Mac, the iPhone), [docs/TRAINING.md](docs/TRAINING.md) for the retrain and
+eval loop, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit, and
+[docs/ROADMAP.md](docs/ROADMAP.md) for what comes next. [PRIVACY.md](PRIVACY.md) explains
+exactly what is stored and what can leave the machine.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `soulsaka serve` | Run the hub: API, web app, background workers |
+| `soulsaka import --auto` | Find and import iMessage, WhatsApp, Apple Mail, git; `import imap`, `import whatsapp-export`, `import discord`, `import docs` for the rest |
+| `soulsaka stats` | Words of you by register, source, language and month |
+| `soulsaka note "remember ..."` | Quick text capture (rule-based memories land instantly) |
+| `soulsaka listen` | Always-on microphone with VAD, offline spool and upload |
+| `soulsaka chat "..."` | One-shot chat; `--mode twin` answers as you |
+| `soulsaka self-model --regenerate` | Rebuild the style fingerprint + profile that goes into every prompt |
+| `soulsaka train preview / run / list / serve-llm` | Snapshot, cumulative QLoRA retrain, versions, serve the adapter |
+| `soulsaka eval pairs / discriminator / voice / report` | Blind pairs for friends, classifier proxy, voice similarity, the curve |
+| `soulsaka voice reference / say / dataset` | Build the TTS reference clip, speak, export a fine-tuning set |
+| `soulsaka bench` | Capture-to-memory and chat latency against a running hub |
+| `soulsaka pair`, `soulsaka devices`, `soulsaka hub login` | Pairing and devices |
 
 ## Layout
 
@@ -80,14 +98,16 @@ src/soulsaka/
   cli.py          soulsaka command
   config.py       settings (config.toml + SOULSAKA_* env)
   db/             SQLite schema, migrations, data access
-  importers/      iMessage, WhatsApp, email, Discord, git, auto-discovery
-  hub/            FastAPI app, auth/pairing, job queue, capture pipeline, chat
+  importers/      iMessage, WhatsApp, mail, Discord, git, docs, auto-discovery
+  hub/            FastAPI app, auth/pairing, job queue, capture pipeline, chat, routes
   ml/             ASR, speaker verification, embeddings, LLM backends
   listener/       always-on microphone client
-  train/          dataset builder, QLoRA backends, adapter registry
-  voice/          TTS
-  eval/           blind pairs, discriminator, voice similarity
+  train/          dataset builder, QLoRA backends, adapter registry, export, serving
+  eval/           blind pairs, discriminator, voice similarity, report
+  voice/          TTS, reference clip, fine-tuning dataset
+  bench.py        latency measurements
 web/              PWA (Vite + Preact)
+scripts/          per-machine setup, service files, monthly retrain
 tests/            pytest suite; ML backends have fakes so it runs without a GPU
 ```
 
