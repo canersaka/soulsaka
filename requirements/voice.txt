@@ -1,0 +1,4 @@
+# Zero-shot voice cloning. F5-TTS pins its own torch/torchaudio; install after train.txt.
+#   uv pip install -r requirements/voice.txt
+f5-tts
+soundfile

@@ -183,12 +183,23 @@ class TrainConfig(BaseModel):
     learning_rate: float = 2e-4
     batch_size: int = 2
     grad_accum: int = 8
-    # Prior messages included as context for each training target.
+    # Prior turns included as context for each training target.
     context_window: int = 8
     min_target_words: int = 2
     max_target_words: int = 400
+    # Which registers to train on, and whether my side of chats with the assistant counts
+    # (off by default: talking to a bot is a narrow register).
+    registers: list[str] = Field(default_factory=lambda: ["text", "email", "speech", "doc"])
+    include_chat_turns: bool = False
+    # Conversation openers (my message with nothing before it) as standalone examples.
+    include_openers: bool = True
+    max_per_conversation: int = 3000
     holdout_fraction: float = 0.05
     seed: int = 7
+    # Serving after training: llama.cpp binary/dir and base GGUF for CUDA; mlx for Apple.
+    llama_cpp_dir: str = ""
+    base_gguf: str = ""
+    serve_port: int = 8080
 
 
 class TTSConfig(BaseModel):

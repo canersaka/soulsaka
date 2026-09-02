@@ -100,7 +100,39 @@ def default_handlers() -> dict[str, Handler]:
 
         embed_memory(state, payload["uid"])
 
+    def train(state: HubState, payload: dict) -> None:
+        from soulsaka.hub.services.training_job import run_training_subprocess
+
+        run_training_subprocess(state, payload["version"], dry_run=bool(payload.get("dry_run")))
+
+    def eval_generate(state: HubState, payload: dict) -> None:
+        from soulsaka.eval.pairs import generate_pairs
+
+        generate_pairs(
+            state, payload["version"], n=int(payload.get("n", 20)), profile=payload.get("profile")
+        )
+
+    def eval_discriminator(state: HubState, payload: dict) -> None:
+        from soulsaka.eval.discriminator import run_discriminator
+
+        run_discriminator(state, payload["version"])
+
+    def eval_voice(state: HubState, payload: dict) -> None:
+        from soulsaka.eval.voice import run_voice_similarity
+
+        run_voice_similarity(state, payload["version"])
+
+    def regen_self_model(state: HubState, payload: dict) -> None:
+        from soulsaka.hub.services.self_model import regenerate
+
+        regenerate(state, use_llm=bool(payload.get("use_llm", True)))
+
     return {
+        "regen_self_model": regen_self_model,
+        "train": train,
+        "eval_generate": eval_generate,
+        "eval_discriminator": eval_discriminator,
+        "eval_voice": eval_voice,
         "process_capture": process_capture,
         "enroll_speaker": enroll_speaker,
         "extract_memories_llm": extract_memories_llm,

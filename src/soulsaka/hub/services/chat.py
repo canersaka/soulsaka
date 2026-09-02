@@ -24,7 +24,7 @@ from soulsaka.util.time import now_iso, utcnow
 
 log = logging.getLogger(__name__)
 
-SELF_MODEL_FILE = "self_model.md"
+from soulsaka.hub.services.self_model import SELF_MODEL_FILE  # noqa: E402
 
 REGISTER_HINTS = {
     "text": "This is a text message conversation: short, casual, lowercase is fine, no sign-off.",

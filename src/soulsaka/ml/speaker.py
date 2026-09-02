@@ -138,7 +138,7 @@ class SpeakerService:
         if prof is None:
             return None
         emb = self.backend.embed(Path(path))
-        return float(np.dot(emb, prof[0]))
+        return float(np.clip(np.dot(emb, prof[0]), -1.0, 1.0))
 
     def verify(self, db: Database, path: Path, name: str = ME) -> tuple[bool | None, float | None]:
         """(is_me, score). is_me is None while nobody is enrolled."""

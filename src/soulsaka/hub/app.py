@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from soulsaka import __version__
 from soulsaka.config import Settings, get_settings
 from soulsaka.hub.jobs import JobRunner, default_handlers
-from soulsaka.hub.routes import admin, captures, chat, corpus, memories, sync, system
+from soulsaka.hub.routes import admin, captures, chat, corpus, eval, memories, sync, system, training
 from soulsaka.hub.state import HubState
 
 log = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for r in (system, corpus, captures, memories, sync, chat, admin):
+    for r in (system, corpus, captures, memories, sync, chat, admin, training, eval):
         app.include_router(r.router, prefix="/api")
 
     @app.exception_handler(404)

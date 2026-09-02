@@ -446,5 +446,49 @@ def memory_export(out: Path = typer.Option(Path("memories.json"))):
     rprint(f"wrote {len(items)} memories to {out}")
 
 
+@app.command("self-model")
+def self_model_cmd(
+    regenerate: bool = typer.Option(
+        False, "--regenerate", help="Rebuild it now (uses the LLM if reachable)."
+    ),
+    no_llm: bool = typer.Option(False, help="Fingerprint only, skip the LLM narrative."),
+):
+    """Show or rebuild the self-model document that goes into every prompt."""
+    from soulsaka.hub.services import self_model as sm
+
+    state = _state()
+    try:
+        if regenerate:
+            print(sm.regenerate(state, use_llm=not no_llm))
+        else:
+            print(sm.current(state) or "no self-model yet; run `soulsaka self-model --regenerate`")
+    finally:
+        state.close()
+
+
+# -- optional sub-commands provided by other modules ------------------------------------
+
+
+def _mount_optional() -> None:
+    """Sub-apps that live next to their implementation; skipped if not present."""
+    import importlib
+    import importlib.util
+
+    mounts = [
+        ("soulsaka.importers.cli", "import_app", "import"),
+        ("soulsaka.train.cli", "train_app", "train"),
+        ("soulsaka.eval.cli", "eval_app", "eval"),
+        ("soulsaka.listener.cli", "listen_app", "listen"),
+    ]
+    for module, attr, name in mounts:
+        if importlib.util.find_spec(module) is None:
+            continue
+        mod = importlib.import_module(module)
+        app.add_typer(getattr(mod, attr), name=name)
+
+
+_mount_optional()
+
+
 if __name__ == "__main__":
     app()

@@ -35,3 +35,18 @@ def backfill(request: Request, device=Depends(current_device)):
     from soulsaka.hub.services import retrieval
 
     return retrieval.backfill(get_state(request))
+
+
+@router.get("/self-model")
+def self_model(request: Request, device=Depends(current_device)):
+    from soulsaka.hub.services.self_model import current, style_stats
+
+    state = get_state(request)
+    return {"markdown": current(state), "stats": style_stats(state.db)}
+
+
+@router.post("/self-model/regenerate")
+def self_model_regenerate(request: Request, device=Depends(current_device)):
+    state = get_state(request)
+    job = jobs_db.enqueue(state.db, "regen_self_model", {}, priority=-3, max_attempts=1)
+    return {"job": job}
