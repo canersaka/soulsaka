@@ -6,6 +6,8 @@ built here at test time, shaped like the real thing (same tables, same line form
 
 from __future__ import annotations
 
+import base64
+import imaplib
 import json
 import os
 import sqlite3
@@ -78,7 +80,11 @@ def make_chat_db(path: Path, *, nanoseconds: bool = True) -> Path:
     )
     conn.executemany(
         "INSERT INTO handle VALUES (?, ?, ?)",
-        [(1, ALI_PHONE, "iMessage"), (2, "bob@example.com", "iMessage"), (3, "+905320000000", "SMS")],
+        [
+            (1, ALI_PHONE, "iMessage"),
+            (2, "bob@example.com", "iMessage"),
+            (3, "+905320000000", "SMS"),
+        ],
     )
     conn.executemany(
         "INSERT INTO chat VALUES (?, ?, ?, ?, ?)",
@@ -87,9 +93,7 @@ def make_chat_db(path: Path, *, nanoseconds: bool = True) -> Path:
             (2, "iMessage;+;chat123", "chat123", "Trip crew", 43),
         ],
     )
-    conn.executemany(
-        "INSERT INTO chat_handle_join VALUES (?, ?)", [(1, 1), (2, 1), (2, 2), (2, 3)]
-    )
+    conn.executemany("INSERT INTO chat_handle_join VALUES (?, ?)", [(1, 1), (2, 1), (2, 2), (2, 3)])
 
     def when(minutes: int) -> int:
         dt = T0 + timedelta(minutes=minutes)
@@ -192,8 +196,7 @@ ANDROID_EXPORT = (
 )
 
 PHONE_EXPORT = (
-    "1/2/24, 3:45 PM - +90 532 000 00 00: numaram bu\n"
-    "1/2/24, 3:46 PM - Caner: tamam kaydettim\n"
+    "1/2/24, 3:45 PM - +90 532 000 00 00: numaram bu\n1/2/24, 3:46 PM - Caner: tamam kaydettim\n"
 )
 
 
@@ -210,7 +213,9 @@ def make_export_zip(path: Path, text: str = IOS_EXPORT) -> Path:
 
 def _mbox_entry(sender: str, from_date: str, headers: list[tuple[str, str]], body: str) -> str:
     head = "\n".join(f"{k}: {v}" for k, v in headers)
-    escaped = "\n".join((">" + line if line.startswith("From ") else line) for line in body.split("\n"))
+    escaped = "\n".join(
+        (">" + line if line.startswith("From ") else line) for line in body.split("\n")
+    )
     return f"From {sender} {from_date}\n{head}\n\n{escaped}\n\n"
 
 
@@ -295,8 +300,8 @@ def make_mbox(path: Path) -> Path:
                 ("MIME-Version", "1.0"),
                 ("Content-Type", 'multipart/alternative; boundary="b1"'),
             ],
-            "--b1\nContent-Type: text/plain; charset=\"utf-8\"\n\nhere are the notes\n-- \nCaner Saka\n"
-            "--b1\nContent-Type: text/html; charset=\"utf-8\"\n\n<div>here are the <b>notes</b></div>\n--b1--",
+            '--b1\nContent-Type: text/plain; charset="utf-8"\n\nhere are the notes\n-- \nCaner Saka\n'
+            '--b1\nContent-Type: text/html; charset="utf-8"\n\n<div>here are the <b>notes</b></div>\n--b1--',
         ),
         _mbox_entry(
             ME_EMAIL,
@@ -350,12 +355,17 @@ SENT_EMLX = (
     "Content-Type: text/plain; charset=utf-8\r\n\r\nlet's meet at 8\r\n\r\n-- \r\nCaner\r\n"
 ).encode()
 
+_REPLY_BODY = (
+    "tamam, bu akşam 8 iyi\n\nOn Tue, Jan 2, 2024 at 3:45 PM Caner Saka <me@example.com> wrote:\n"
+    "> let's meet at 8\n"
+)
 INBOX_REPLY_EMLX = (
     "From: Ali Veli <ali@example.com>\r\n"
     f"To: Caner Saka <{ME_EMAIL}>\r\nSubject: Re: Plan\r\n"
     "Date: Tue, 2 Jan 2024 16:10:00 +0300\r\nMessage-ID: <r1@example.com>\r\n"
     "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
-    "dGFtYW0sIGJ1IGFrxZ9hbSA4IGl5aQoKT24gVHVlLCBKYW4gMiwgMjAyNCBhdCAzOjQ1IFBNIENhbmVyIFNha2EgPG1lQGV4YW1wbGUuY29tPiB3cm90ZToKPiBsZXQncyBtZWV0IGF0IDgK\r\n"
+    + base64.b64encode(_REPLY_BODY.encode("utf-8")).decode("ascii")
+    + "\r\n"
 ).encode()
 
 INBOX_NEWSLETTER_EMLX = (
@@ -399,7 +409,9 @@ def make_discord_package(root: Path) -> Path:
     messages = root / "messages"
     messages.mkdir(parents=True, exist_ok=True)
     (messages / "index.json").write_text(
-        json.dumps({"111": "Direct Message with alice", "222": "general in Some Server", "333": None})
+        json.dumps(
+            {"111": "Direct Message with alice", "222": "general in Some Server", "333": None}
+        )
     )
     dm = messages / "c111"
     dm.mkdir()
@@ -416,7 +428,9 @@ def make_discord_package(root: Path) -> Path:
     guild = messages / "c222"
     guild.mkdir()
     (guild / "channel.json").write_text(
-        json.dumps({"id": "222", "type": 0, "name": "general", "guild": {"id": "9", "name": "Some Server"}})
+        json.dumps(
+            {"id": "222", "type": 0, "name": "general", "guild": {"id": "9", "name": "Some Server"}}
+        )
     )
     (guild / "messages.csv").write_text(
         "ID,Timestamp,Contents,Attachments\n4,2019-05-01 12:34:56.789000+00:00,old style csv row,\n"
@@ -503,7 +517,11 @@ def make_mac_home(home: Path) -> Path:
     """A fake ``~`` with every source in the place ``soulsaka import --auto`` looks."""
     make_chat_db(home / "Library" / "Messages" / "chat.db")
     make_whatsapp_db(
-        home / "Library" / "Group Containers" / "group.net.whatsapp.WhatsApp.shared" / "ChatStorage.sqlite"
+        home
+        / "Library"
+        / "Group Containers"
+        / "group.net.whatsapp.WhatsApp.shared"
+        / "ChatStorage.sqlite"
     )
     make_mail_tree(home / "Library" / "Mail")
     downloads = home / "Downloads"
@@ -516,3 +534,55 @@ def make_mac_home(home: Path) -> Path:
     make_docs_dir(home / "Documents" / "notes")
     (home / "Desktop").mkdir(exist_ok=True)
     return home
+
+
+# --- IMAP --------------------------------------------------------------------------------
+
+
+class FakeIMAP:
+    """Just enough of imaplib.IMAP4 for the importer: login, list, select, uid search/fetch."""
+
+    def __init__(self, folders: dict[str, list[bytes]], *, fail_login: bool = False):
+        self.folders = folders
+        self.fail_login = fail_login
+        self.selected: str | None = None
+        self.searches: list[tuple] = []
+        self.logged_out = False
+
+    def login(self, user: str, password: str):
+        if self.fail_login:
+            raise imaplib.IMAP4.error("[AUTHENTICATIONFAILED] Invalid credentials")
+        return "OK", [b"Logged in"]
+
+    def list(self):
+        return "OK", [
+            b'(\\HasNoChildren) "/" "INBOX"',
+            b'(\\HasChildren \\Noselect) "/" "[Gmail]"',
+            b'(\\HasNoChildren \\Sent) "/" "[Gmail]/Sent Mail"',
+        ]
+
+    def select(self, mailbox: str, readonly: bool = False):
+        name = mailbox.strip('"')
+        if name not in self.folders:
+            return "NO", [b"no such folder"]
+        self.selected = name
+        return "OK", [str(len(self.folders[name])).encode()]
+
+    def uid(self, command: str, *args):
+        assert self.selected is not None
+        msgs = self.folders[self.selected]
+        if command == "SEARCH":
+            self.searches.append(args[1:])
+            return "OK", [b" ".join(str(i + 1).encode() for i in range(len(msgs)))]
+        if command == "FETCH":
+            out: list = []
+            for uid in args[0].split(","):
+                raw = msgs[int(uid) - 1]
+                out.append((f"{uid} (UID {uid} BODY[] {{{len(raw)}}})".encode(), raw))
+                out.append(b")")
+            return "OK", out
+        raise AssertionError(command)
+
+    def logout(self):
+        self.logged_out = True
+        return "BYE", [b"bye"]

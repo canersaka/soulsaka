@@ -15,6 +15,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import httpx
 import typer
 from rich import print as rprint
 from rich.console import Console
@@ -29,6 +30,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from soulsaka.client import HubError
 from soulsaka.config import get_settings
 from soulsaka.identity import IdentityResolver
 from soulsaka.importers.base import IMPORTERS, DiscoveredSource, Importer, ImporterError, run_import
@@ -122,43 +124,57 @@ def _run(
         return []
     sink: DbSink | HubSink = open_sink(local=local, hub=hub)
     rprint(f"[dim]destination: {escape(sink.describe())}[/]")
-    reports: list[ImportReport] = []
     try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TimeElapsedColumn(),
-            console=console,
-            transient=True,
-        ) as progress:
-            for importer, estimate in jobs:
-                task = progress.add_task(importer.label, total=estimate)
-                try:
-                    report = run_import(
-                        importer,
-                        sink,
-                        progress=lambda n, task=task: progress.update(task, completed=n),
-                    )
-                except ImporterError as e:
-                    progress.remove_task(task)
-                    rprint(f"[red]{escape(importer.label)}:[/] {escape(str(e))}")
-                    continue
-                progress.update(task, total=report.received, completed=report.received)
-                reports.append(report)
-        if reports:
-            console.print(_reports_table(reports))
-            for r in reports:
-                for note in r.notes:
-                    rprint(f"  [dim]{escape(note)}[/]")
-                for reason, n in sorted(r.skipped_reasons.items()):
-                    rprint(f"  [dim]{escape(r.source.label)}: skipped {n:,} {reason}[/]")
-            words = sink.me_words()
-            color = "green" if words >= 30_000 else "yellow"
-            rprint(f"[bold {color}]{words:,}[/] words of you in the corpus (soulsaka stats for more)")
+        return _run_into(jobs, sink)
+    except (HubError, httpx.HTTPError) as e:
+        rprint(f"[red]hub:[/] {escape(str(e))}")
+        rprint("[dim]is the hub running? pair with `soulsaka hub login`, or pass --local[/]")
+        raise typer.Exit(1) from None
     finally:
         sink.close()
+
+
+def _run_into(
+    jobs: list[tuple[Importer, int | None]], sink: DbSink | HubSink
+) -> list[ImportReport]:
+    reports: list[ImportReport] = []
+    failed = 0
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        for importer, estimate in jobs:
+            task = progress.add_task(importer.label, total=estimate)
+            try:
+                report = run_import(
+                    importer,
+                    sink,
+                    progress=lambda n, task=task: progress.update(task, completed=n),
+                )
+            except ImporterError as e:
+                progress.remove_task(task)
+                rprint(f"[red]{escape(importer.label)}:[/] {escape(str(e))}")
+                failed += 1
+                continue
+            progress.update(task, total=report.received, completed=report.received)
+            reports.append(report)
+    if reports:
+        console.print(_reports_table(reports))
+        for r in reports:
+            for note in r.notes:
+                rprint(f"  [dim]{escape(note)}[/]")
+            for reason, n in sorted(r.skipped_reasons.items()):
+                rprint(f"  [dim]{escape(r.source.label)}: skipped {n:,} {reason}[/]")
+        words = sink.me_words()
+        color = "green" if words >= 30_000 else "yellow"
+        rprint(f"[bold {color}]{words:,}[/] words of you in the corpus (soulsaka stats for more)")
+    if failed and not reports:
+        raise typer.Exit(1)
     return reports
 
 

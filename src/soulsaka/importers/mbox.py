@@ -21,6 +21,7 @@ from email.message import Message
 from email.parser import BytesHeaderParser
 from pathlib import Path
 
+from soulsaka.identity import IdentityResolver
 from soulsaka.importers.base import (
     DiscoveredSource,
     Importer,
@@ -60,6 +61,10 @@ class MboxImporter(Importer):
     source_kind = "email"
     register = "email"
     label = "mbox"
+
+    def __init__(self, locator: str | Path, *, identity: IdentityResolver | None = None) -> None:
+        super().__init__(locator, identity=identity)
+        self.source_label = f"{self.label} {Path(locator).name}"
 
     def _is_me(self, msg: Message, addr: str) -> bool:
         return self.identity.is_me_handle(addr) or bool(gmail_labels(msg) & SENT_LABELS)

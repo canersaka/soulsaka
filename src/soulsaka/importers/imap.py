@@ -41,7 +41,6 @@ COMMON_SENT_FOLDERS = (
 )
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 _LIST_RE = re.compile(rb'\((?P<flags>[^)]*)\)\s+(?:"[^"]*"|NIL)\s+(?P<name>.+)$')
-_UID_RE = re.compile(rb"UID (\d+)")
 _FETCH_BATCH = 50
 
 
@@ -66,7 +65,7 @@ def parse_list_line(line: bytes) -> tuple[set[str], str] | None:
     return flags, name
 
 
-def is_sent_folder(name: str, flags: set[str] = frozenset()) -> bool:  # type: ignore[assignment]
+def is_sent_folder(name: str, flags: frozenset[str] | set[str] = frozenset()) -> bool:
     if "\\sent" in flags:
         return True
     leaf = re.split(r"[/.]", name)[-1].strip().casefold()

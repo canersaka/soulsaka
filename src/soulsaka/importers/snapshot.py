@@ -43,7 +43,20 @@ def copy_sqlite(source: Path, into: Path) -> Path:
 
 
 def open_readonly(path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    """Open a private copy read-only.
+
+    A copied WAL-mode database still has un-checkpointed frames in its ``-wal`` file;
+    SQLite reads those fine in ``mode=ro`` as long as it can create the ``-shm`` next to
+    it, which it can in our temp dir. Should a build refuse anyway, fall back to a normal
+    open: the copy is ours, so nothing of the user's can be touched.
+    """
+    uri = f"{path.resolve().as_uri()}?mode=ro"
+    try:
+        conn = sqlite3.connect(uri, uri=True)
+        conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchall()
+    except sqlite3.OperationalError:
+        conn = sqlite3.connect(str(path))
+        conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchall()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -75,7 +88,6 @@ class SqliteSnapshot:
         try:
             copied = copy_sqlite(self.source, self.tempdir)
             self.conn = open_readonly(copied)
-            self.conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchall()
         except BaseException:
             self.close()
             raise

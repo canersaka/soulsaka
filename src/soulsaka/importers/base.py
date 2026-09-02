@@ -70,9 +70,13 @@ class Importer:
         self.locator = str(locator)
         self.identity = identity or IdentityResolver()
         self.notes: list[str] = []
+        # What the sources table calls this instance; file-based importers add the file name.
+        self.source_label: str = self.label
 
     def source_ref(self) -> SourceRef:
-        return SourceRef(kind=self.source_kind or self.kind, label=self.label, locator=self.locator)
+        return SourceRef(
+            kind=self.source_kind or self.kind, label=self.source_label, locator=self.locator
+        )
 
     def iter_messages(self) -> Iterator[ImportedMessage]:
         raise NotImplementedError
@@ -84,7 +88,7 @@ class Importer:
 
     def note(self, text: str) -> None:
         """Record something the user should see in the final report."""
-        self.notes.append(f"{self.label}: {text}")
+        self.notes.append(f"{self.source_label}: {text}")
 
     @classmethod
     def found(
@@ -182,15 +186,14 @@ def find_paths(
         except OSError:
             return
         for entry in entries:
+            if len(out) >= limit:
+                return
             if entry.name.startswith(".") or entry.is_symlink():
                 continue
             path = Path(entry.path)
             if match(path):
                 out.append(path)
-                if len(out) >= limit:
-                    return
-                continue
-            if entry.is_dir() and depth < max_depth:
+            elif entry.is_dir() and depth < max_depth:
                 walk(path, depth + 1)
 
     for root in roots:

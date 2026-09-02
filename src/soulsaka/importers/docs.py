@@ -14,6 +14,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
+from soulsaka.identity import IdentityResolver
 from soulsaka.importers.base import Importer, ImporterError, register_importer
 from soulsaka.models import ImportedMessage
 from soulsaka.text.normalize import word_count
@@ -30,7 +31,8 @@ _PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n")
 def prose(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _FRONT_MATTER_RE.sub("", text)
-    return _FENCE_RE.sub("", text).strip()
+    text = _FENCE_RE.sub("", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def chunk_paragraphs(text: str, max_words: int = MAX_CHUNK_WORDS) -> list[str]:
@@ -70,6 +72,10 @@ class DocsImporter(Importer):
     source_kind = "doc"
     register = "doc"
     label = "documents"
+
+    def __init__(self, locator: str | Path, *, identity: IdentityResolver | None = None) -> None:
+        super().__init__(locator, identity=identity)
+        self.source_label = f"{self.label} {Path(locator).expanduser().name}"
 
     def iter_messages(self) -> Iterator[ImportedMessage]:
         root = Path(self.locator).expanduser()

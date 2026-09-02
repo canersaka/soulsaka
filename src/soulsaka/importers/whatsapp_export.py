@@ -242,6 +242,7 @@ class WhatsAppExportImporter(Importer):
         tz: tzinfo = UTC,
     ) -> None:
         super().__init__(locator, identity=identity)
+        self.source_label = f"{self.label} {Path(locator).name}"
         if me:
             self.identity = IdentityResolver(
                 names=[*self.identity.names, me],

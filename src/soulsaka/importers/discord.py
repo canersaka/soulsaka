@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from soulsaka.identity import IdentityResolver
 from soulsaka.importers.base import (
     DiscoveredSource,
     Importer,
@@ -131,6 +132,10 @@ class DiscordImporter(Importer):
     kind = "discord"
     register = "text"
     label = "Discord"
+
+    def __init__(self, locator: str | Path, *, identity: IdentityResolver | None = None) -> None:
+        super().__init__(locator, identity=identity)
+        self.source_label = f"{self.label} {Path(locator).name}"
 
     def iter_messages(self) -> Iterator[ImportedMessage]:
         path = Path(self.locator)
