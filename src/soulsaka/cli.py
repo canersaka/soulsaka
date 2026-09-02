@@ -410,6 +410,24 @@ def voice_reference():
     rprint(f"text: {out['reference_text']}")
 
 
+@voice_app.command("dataset")
+def voice_dataset(
+    out: Path = typer.Option(None, help="Output directory (default: <data>/datasets/tts)."),
+):
+    """Export verified clips + transcripts as an F5-TTS fine-tuning dataset."""
+    from soulsaka.paths import datasets_dir
+    from soulsaka.voice.dataset import export_tts_dataset
+
+    state = _state()
+    try:
+        m = export_tts_dataset(state.db, state.root, out or (datasets_dir() / "tts"))
+    finally:
+        state.close()
+    rprint(
+        f"{m['clips']} clips, {m['hours']} h of your voice ({'ready' if m['ready_for_finetune'] else 'need 1 h'} for fine-tuning)"
+    )
+
+
 @voice_app.command("say")
 def voice_say(text: str, out: Path = typer.Option(Path("out.wav"), help="Output WAV path.")):
     """Synthesize text in your voice."""
