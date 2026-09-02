@@ -391,6 +391,22 @@ def voice_reset():
     rprint("speaker profile cleared")
 
 
+@voice_app.command("reference")
+def voice_reference():
+    """Assemble the 6-12 s reference clip that zero-shot TTS clones from."""
+    from soulsaka.voice.reference import build_reference
+
+    state = _state()
+    try:
+        out = build_reference(state.db, root=state.root)
+    finally:
+        state.close()
+    rprint(
+        f"reference: {out['reference_clip']} ({out['seconds']} s from {len(out['clips'])} clips)"
+    )
+    rprint(f"text: {out['reference_text']}")
+
+
 @voice_app.command("say")
 def voice_say(text: str, out: Path = typer.Option(Path("out.wav"), help="Output WAV path.")):
     """Synthesize text in your voice."""

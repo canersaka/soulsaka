@@ -54,12 +54,18 @@ class F5TTS:
 def build_tts(cfg: TTSConfig, state) -> TTS:
     if cfg.backend == "fake":
         return FakeTTS()
-    ref = cfg.reference_clip
+    from soulsaka.voice.reference import get_reference
+
+    ref, ref_text = cfg.reference_clip, cfg.reference_text
     if not ref:
-        raise RuntimeError("tts.reference_clip is not set; run `soulsaka voice reference` first")
+        ref, ref_text = get_reference(state.db)
+    if not ref:
+        raise RuntimeError(
+            "no reference clip yet; run `soulsaka voice reference` after recording a few notes"
+        )
     ref_path = Path(ref)
     if not ref_path.is_absolute():
         ref_path = state.abs_path(ref)
     if cfg.backend == "f5-tts":
-        return F5TTS(ref_path, cfg.reference_text)
+        return F5TTS(ref_path, ref_text)
     raise RuntimeError(f"tts backend {cfg.backend!r} not implemented yet")
